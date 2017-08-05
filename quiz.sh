@@ -26,6 +26,8 @@ echo -E "love hate ratio is $(echo ${lovelines}/${hatelines} | bc -l)"
 
 # 5. biostats in twitter
 grep 'biostats' ${twitterfile}
+# looks no match? maybe the corpora was updated or something?
+
 
 # 6. 
 grep -c 'A computer once beat me at chess, but it was no match for me at kickboxing' ${twitterfile}

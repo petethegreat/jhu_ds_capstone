@@ -1,0 +1,119 @@
+---
+title: "Swiftkey NLP project - Exploratory Analysis"
+author: "Peter Thompson"
+output:
+  html_document:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+  pdf_document:
+    toc: true
+---
+
+===============================
+
+# Exploratory exploration of the corpus
+
+load the data. Will only look at a small subset (1%) to start with. Will use the tm package to build a corpus, which treats each line as a document.
+
+```{r,loadData,cache=TRUE}
+
+library(tm)
+library(RWeka)
+
+blogs<-readLines('./data/final/en_US/en_US.blogs.txt')
+news<-readLines('./data/final/en_US/en_US.news.txt')
+tweets<-readLines('./data/final/en_US/en_US.twitter.txt')
+
+length(blogs)
+length(news)
+length(tweets)
+
+frac<-0.01
+textData<-c(
+    sample(blogs,floor(frac*length(blogs))),
+    sample(news,floor(frac*length(news))),
+    sample(tweets,floor(frac*length(tweets)))
+    )
+
+rm(blogs,news,tweets)
+mycorpus<-Corpus(VectorSource(textData))
+```
+
+We are interested in the words contained in the corpus. Will do some cleaning to convert all upper case characters to lower case, remove numbers, punctuation, and additional whitespace.
+
+```{r, cleanData, cache=TRUE, dependson='loadData'}
+# clean here
+mycorpus<-tm_map(mycorpus,tolower)
+mycorpus<-tm_map(mycorpus,removeNumbers)
+#mycorpus<-tm_map(mycorpus,removeWords, stopwords("english"))
+mycorpus<-tm_map(mycorpus,removePunctuation)
+mycorpus<-tm_map(mycorpus,stripWhitespace)
+```
+
+From the corpus created above, will build some 1-grams (words). Can do this by constructing a term document matrix, which a matrix containing word counts per document (documents correspond to columns, words to rows). Total word counts from the corpus can be constructing by taking row sums. the ```TermDocumentMatrix``` function from the tm package uses a one word tokeniser by default, to construct bigrams or trigrams a custom function needs to be created that will tokenise word pairs or triplets (the ```NGramTokenizer``` function from RWeka is good for this).
+
+
+```{r, makegrams, cache=TRUE, dependson='cleanData'}
+#gram2tokeniser<- function(x) NGramTokenizer(x,Weka_control(min = 3, max = 3))
+tdm_1gram<-TermDocumentMatrix(mycorpus)#,control=list(tokenize=gram2tokeniser))
+
+inspect(tdm_1gram)
+```
+
+## Exploratory Analysis
+
+```{r dimensions, cache=TRUE, dependson='makegrams'}
+dim(tdm_1gram)
+
+tdm_1gram<-removeSparseTerms(tdm_1gram,0.99)
+dim(tdm_1gram)
+```
+
+```{r wordcounts, cache=TRUE, dependson='dimensions'}
+
+wordcounts<-rowSums(as.matrix(tdm_1gram))
+wordfreq<-sort(wordcounts, decreasing=TRUE)
+
+head(wordfreq)
+```
+
+## stuff
+use NLP package
+use RWeka
+
+read our files, sample to get some small percentage for training/exploration
+
+
+make a corpus
+clean it, to lower, remove whitespace, remove numbers, etc. Sentences?
+
+
+make some tokenizer functions, 1,2,3 grams
+make a term document matrix for each
+
+
+
+## Model
+Will use ngrams, and a tree like structure. A 1 gram tree predicts based on the frequecy of one word ocuring (i.e., the total word count.) A 2gram or bigram predicts based on frequency of two words, i.e. chooses the second based on probability of it following the first. A trigram predicts the third word based on the frequency of the first two occuring in that order.
+
+First, decide on tree depth. Increased depth will improve accuracy but hamper performance
+
+Each node on the tree will be associated with a word and a frequency (or probability). The root node will be null, but level 1 children will be our 1-grams: each node will contain the frequency. This is kind of dumb. 
+
+will have a 1 gram tree.
+
+Arrange trees by probability or by word ordering? 
+given a history, want to be able to locate the relevant tree quickly. 
+
+
+# Things
+
+Deal with histories? Should we split things based on sentences? The first word in sentence isn't neccasrily related to the last word in the previous sentence. We could introduce artificicial breaks into the corpus by doing this. (maybe not for twitter?). This will mess with things like "Mr. Anderson"
+
+# training/testing
+combine all files, sample some fraction to get a subset
+sample from the subset to get a train and test set. We can use the test as a validation set to svaluate our model
+maybe make a validation set if we want to optimise something
+
+
+
+
