@@ -14,7 +14,7 @@ output:
 
 load the data. Will only look at a small subset (1%) to start with. Will use the tm package to build a corpus, which treats each line as a document.
 
-```{r,loadData,cache=TRUE}
+```{r,loadData,cache=TRUE,warning=FALSE}
 
 library(tm)
 library(RWeka)
@@ -27,6 +27,7 @@ length(blogs)
 length(news)
 length(tweets)
 
+set.seed(97)
 frac<-0.01
 textData<-c(
     sample(blogs,floor(frac*length(blogs))),
@@ -37,6 +38,7 @@ textData<-c(
 rm(blogs,news,tweets)
 mycorpus<-Corpus(VectorSource(textData))
 ```
+There are about 1 million lines of text in the blogs and news files, and over 2 million on the twitter file.
 
 We are interested in the words contained in the corpus. Will do some cleaning to convert all upper case characters to lower case, remove numbers, punctuation, and additional whitespace.
 
@@ -68,38 +70,41 @@ tdm_1gram<-removeSparseTerms(tdm_1gram,0.999)
 dim(tdm_1gram)
 ```
 
-Initially there were 56,712 unique terms (words) in our corpus. That's a lot, and we probably don't need all of them. We can trim this by keeping only those terms that are less than 99.9% sparse, that is, only those terms that occur in at least 0.1% of our documents (lines). This reduces our vocabulary to 2161 terms.
+Initially there were 56,720 unique terms (words) in our corpus. That's a lot, and we probably don't need all of them. We can trim this by keeping only those terms that are less than 99.9% sparse, that is, only those terms that occur in at least 0.1% of our documents (lines). This reduces our vocabulary to 2176 terms.
 
 ```{r wordcounts, cache=TRUE, dependson='dimensions'}
 
 wordcounts<-rowSums(as.matrix(tdm_1gram))
+sum(wordcounts)
 wordfreq<-sort(wordcounts, decreasing=TRUE)
 
-head(wordfreq)
-#names(wordfreq)
+# head(wordfreq)
 
 ```
 
+There are a total of 584907 distinct words in our corpus ( mire precisely, the 1% of our corpus being considered)
+
+
 bar chart showing the frequency of the 50 most common words
-```{r, output=FALSE}
+```{r, output=FALSE,echo=FALSE}
 library(ggplot2)
 ```
 
 
 ```{r wordbars, cache=TRUE, dependson='wordcounts'}
-class(wordfreq)
 df<-data.frame(wordcount=wordfreq,term=names(wordfreq))
 df<-df[order(df$wordcount,decreasing=TRUE)[1:20],]
 g<-ggplot(data=df,aes(x=term,weight=wordcount,fill=wordcount)) + 
-    geom_bar() + 
-    scale_x_discrete(limits=df$term) +
-    scale_fill_gradientn(colors=c('purple','green')) +
-    labs(x='word',y='count',title='20 most frequent words')
+    geom_bar(position=position_stack(reverse=TRUE)) + 
+    scale_x_discrete(limits=rev(df$term)) +
+    scale_fill_gradientn(colors=c('blue','red')) +
+    labs(x='word',y='count',title='20 most frequent words') +
+    coord_flip()
 g
 
 ```
 
-The most common word is, by far, 'the'. 
+The most common word is, by far, 'the'. The words 'and' and 'for' are also common. 
 
 ```{r wordcurve,cache=TRUE,dependson='wordcounts'}
 
@@ -109,6 +114,22 @@ h
 
 ```
 There is a very sharp drop in word frequency.
+
+```{r wordlength, cache=TRUE, dependson='wordcurve'}
+
+df2$termlength=nchar(as.character(df2$term))
+
+j<-ggplot(data=df2,aes(termlength,weight=wordcount,fill=..count..)) +
+    geom_histogram(binwidth=0.5) +
+    scale_y_log10() +
+    scale_fill_gradientn(colors=c('blue','red')) +
+    labs(x='term length',y='count')
+j
+
+```
+
+Short words are more common, though the drop as word length increases is fairly steady, in contrast to the sharp drop seen in the word freequency plot.
+
 
 ## Model
 
