@@ -10,9 +10,20 @@ output:
 
 ===============================
 
-# Exploratory exploration of the corpus
+## Loading the data
 
-load the data. Will only look at a small subset (1%) to start with. Will use the tm package to build a corpus, which treats each line as a document.
+
+Can get some quick statistics on the input files using the ```wc``` command ( ```wc -l -w -L```) on linux/unix. This information is printed below.
+
+| file | lines | words | max line length |
+|:-----|------:|------:|----------------:|
+|en_US.blogs.txt | 899288 | 37334117 | 40833 |
+|en_US.news.txt | 1010242 | 34365936 | 11384 |
+|en_US.twitter.txt | 2360148 | 30373559 | 173 |
+
+
+Will load this data into R, using only a small subset (1%) to start with. The tm package will be used to build a corpus, which treats each line as a document.
+
 
 ```{r,loadData,cache=TRUE,warning=FALSE}
 
@@ -22,10 +33,6 @@ library(RWeka)
 blogs<-readLines('./data/final/en_US/en_US.blogs.txt')
 news<-readLines('./data/final/en_US/en_US.news.txt')
 tweets<-readLines('./data/final/en_US/en_US.twitter.txt')
-
-length(blogs)
-length(news)
-length(tweets)
 
 set.seed(97)
 frac<-0.01
@@ -38,7 +45,6 @@ textData<-c(
 rm(blogs,news,tweets)
 mycorpus<-Corpus(VectorSource(textData))
 ```
-There are about 1 million lines of text in the blogs and news files, and over 2 million on the twitter file.
 
 We are interested in the words contained in the corpus. Will do some cleaning to convert all upper case characters to lower case, remove numbers, punctuation, and additional whitespace.
 
@@ -51,7 +57,7 @@ mycorpus<-tm_map(mycorpus,removePunctuation)
 mycorpus<-tm_map(mycorpus,stripWhitespace)
 ```
 
-From the corpus created above, will build some 1-grams (words). Can do this by constructing a term document matrix, which a matrix containing word counts per document (documents correspond to columns, words to rows). Total word counts from the corpus can be constructing by taking row sums. the ```TermDocumentMatrix``` function from the tm package uses a one word tokeniser by default, to construct bigrams or trigrams a custom function needs to be created that will tokenise word pairs or triplets (the ```NGramTokenizer``` function from RWeka is good for this).
+From the corpus created above, some 1-grams (words) will be built. This is done by constructing a term document matrix, which is a matrix containing word counts per document (documents correspond to columns, words to rows). Total word counts from the corpus can be constructing by taking row sums. the ```TermDocumentMatrix``` function from the tm package uses a one word tokeniser by default, to construct bigrams or trigrams a custom function needs to be created that will tokenise word pairs or triplets (the ```NGramTokenizer``` function from RWeka is good for this).
 
 
 ```{r, makegrams, cache=TRUE, dependson='cleanData'}
@@ -63,14 +69,16 @@ inspect(tdm_1gram)
 
 ## Exploratory Analysis
 
-```{r dimensions, cache=TRUE, dependson='makegrams'}
+Initially there were 56,720 unique terms (words) in our corpus. That's a lot, and we probably don't need all of them. We can trim this by keeping only those terms that are less than 99.9% sparse, that is, only those terms that occur in at least 0.1% of our documents (lines).
+
+```{r dimensions, cache=TRUE, dependson='makegrams',warning=FALSE}
 dim(tdm_1gram)
 
 tdm_1gram<-removeSparseTerms(tdm_1gram,0.999)
 dim(tdm_1gram)
 ```
 
-Initially there were 56,720 unique terms (words) in our corpus. That's a lot, and we probably don't need all of them. We can trim this by keeping only those terms that are less than 99.9% sparse, that is, only those terms that occur in at least 0.1% of our documents (lines). This reduces our vocabulary to 2176 terms.
+After removing sparse terms, the term document matrix contains only 2176 unique words.
 
 ```{r wordcounts, cache=TRUE, dependson='dimensions'}
 
@@ -78,14 +86,10 @@ wordcounts<-rowSums(as.matrix(tdm_1gram))
 sum(wordcounts)
 wordfreq<-sort(wordcounts, decreasing=TRUE)
 
-# head(wordfreq)
-
 ```
 
-There are a total of 584907 distinct words in our corpus ( mire precisely, the 1% of our corpus being considered)
+There are a total of 584907 distinct words in the corpus (that is, the 1% sampled from the total corpus). A bar chart showing the frequency of the 50 most common words is plotted below.
 
-
-bar chart showing the frequency of the 50 most common words
 ```{r, output=FALSE,echo=FALSE}
 library(ggplot2)
 ```
@@ -104,7 +108,7 @@ g
 
 ```
 
-The most common word is, by far, 'the'. The words 'and' and 'for' are also common. 
+The most common word is, by far, 'the'. The words 'and' and 'for' are also common. Word frequencies for all (non-sparse) words in the corpus are plotted below.
 
 ```{r wordcurve,cache=TRUE,dependson='wordcounts'}
 
@@ -131,53 +135,16 @@ j
 Short words are more common, though the drop as word length increases is fairly steady, in contrast to the sharp drop seen in the word freequency plot.
 
 
-## Model
+## Model Considerations
 
-A simple could be made by constructing bigrams (2-grams) of words. The probability of the next word ($w2$) could then be approximated as 
-$$
-P(w2|w1) = \frac{C(w1,w2)}{C(w1)}
-$$
-Where P is the probability of w2 following w1, C(w2,w1) is the number of times the bigram "w1 w2" appears in the corpus, and C(w1) is the total number of times w1 appears in the corpus. This could be extended to use trigrams (or higher order n-grams), but building these n-grams will consume a lot of memory - for our initial 56,712 word vocabulary, there are 3.2 billion possible bigrams (though not all of these will occur). Also, we lose some context by removing punctuation.
+A simple could be made by constructing bigrams (2-grams) of words from the corpus. All bigrams that begin with the ast word of the input could be considered, and the second word of the highest frequency bigram would be used as the prediction. This could be extended to use trigrams by looking at the last two words of the input.
 
+For building the ngrams, memory and computation time may be an issue. Might want to consider setting up R on a free AWS account for some additional computing power.
 
-## stuff
-use NLP package
-use RWeka
+In cases where the last few words of input are not contained in any of the ngrams built from the training corpus, then smoothing/backoff models may be used. This uses lower order ngrams (e.g. bigrams) to estimate probability in cases where the input word(s) are not present in the highest order ngrams (e.g. trigrams).
 
-read our files, sample to get some small percentage for training/exploration
+Ngram information could be stored in a tree structure using the ```data.tree``` package. The first level of the tree would correspond to all of the words observed in the corpus. Each of these words would then have a child node for each observed bigram, and each of these nodes would have a child for each observed trigram. This will take up a lot of memory, but after the tree is constructed then low frequency nodes could be pruned.
 
-
-make a corpus
-clean it, to lower, remove whitespace, remove numbers, etc. Sentences?
-
-
-make some tokenizer functions, 1,2,3 grams
-make a term document matrix for each
-
-
-
-## Model
-Will use ngrams, and a tree like structure. A 1 gram tree predicts based on the frequecy of one word ocuring (i.e., the total word count.) A 2gram or bigram predicts based on frequency of two words, i.e. chooses the second based on probability of it following the first. A trigram predicts the third word based on the frequency of the first two occuring in that order.
-
-First, decide on tree depth. Increased depth will improve accuracy but hamper performance
-
-Each node on the tree will be associated with a word and a frequency (or probability). The root node will be null, but level 1 children will be our 1-grams: each node will contain the frequency. This is kind of dumb. 
-
-will have a 1 gram tree.
-
-Arrange trees by probability or by word ordering? 
-given a history, want to be able to locate the relevant tree quickly. 
-
-
-# Things
-
-Deal with histories? Should we split things based on sentences? The first word in sentence isn't neccasrily related to the last word in the previous sentence. We could introduce artificicial breaks into the corpus by doing this. (maybe not for twitter?). This will mess with things like "Mr. Anderson"
-
-# training/testing
-combine all files, sample some fraction to get a subset
-sample from the subset to get a train and test set. We can use the test as a validation set to svaluate our model
-maybe make a validation set if we want to optimise something
-
-
+Some context has been lost from the corpus used above, as there is presently no information relating to word positioning in a sentence (all punctuation is removed before computing ngrams). It's possible that this could be retained, but it would make constructing the model more difficult.
 
 

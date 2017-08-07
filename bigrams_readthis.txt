@@ -1,0 +1,1 @@
+note - corpus should use the VCorpus() constructor rather than just Corpus(), otherwise the weka ngram tokenizer doesn't work. This example should work fine: https://gist.github.com/benmarwick/5370329 
