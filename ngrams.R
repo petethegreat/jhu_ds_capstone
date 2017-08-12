@@ -5,6 +5,15 @@ library(RWeka)
 library(tm)
 library(slam)
 
+getTokeniser<-function(n)
+{
+    toke<-function(x)
+    {
+        NGramTokenizer(x, Weka_control(min = n, max = n))
+    }
+    return(toke)
+}
+
 
 
 makeNgrams<-function(corpus,Nval=1,sparse=0.0)
@@ -105,6 +114,7 @@ loadPastedCorpus<- function(frac=0.20)
     }
     
 
+
     # rm(blogs,news,tweets)
     mycorpus<-VCorpus(VectorSource(textData))
 
@@ -121,15 +131,93 @@ loadPastedCorpus<- function(frac=0.20)
 }
 
 
-WordCountCoverage<-function(source,split=20,test=1)
+GetWordCounts<-function(source=c('blogs','news','twitter'),split=20,testfrags=1,tokenize)
 {
 
     # source is either blogs, news or twitter
     # load the source as textdata
     # split into split parts (cut(seq_along(textdata)),split=split)
     # create a corpus for each file
+    infile<-sprintf('./data/final/en_US/en_US.%s.txt',source)
+    outfile<-sprintf('./data/n1_wordcount_%s.txt',source)
+    testfile<-sprintf('./data/test_%s.txt',source)
+
+    # load lines
+    textData<-readLines(infile,n=40)
+
+    # segment data
+    moose<-cut(runif(length(textData)),split,labels=FALSE)
+
+    # write test data
+    writeLines(textData[moose %in% 1:testfrags],testfile)
+    cat(sprintf('wrote test data to %s\n',testfile))
+
+    wordcount=NULL
+
+
+    # loop over other segments
+    for(i in 1+testfrags:5)#split)
+    {
+
+        mycorpus<-VCorpus(VectorSource(textData[moose == i]))
+        # clean it
+        mycorpus<-tm_map(mycorpus,content_transformer(tolower))
+        mycorpus<-tm_map(mycorpus,removeNumbers)
+        #mycorpus<-tm_map(mycorpus,removeWords, stopwords("english"))
+        mycorpus<-tm_map(mycorpus,removePunctuation)
+        mycorpus<-tm_map(mycorpus,stripWhitespace)
+        # remove non english characters?
+
+        # tokenise
+        tdm_ngram<-TermDocumentMatrix(mycorpus,control=list(tokenize=tokenize))
+        wordsums<-slam::row_sums(tdm_ngram,na.rm=TRUE)
+        temp<-data.frame(newcounts=wordsums)
+        rm(mycorpus)
+
+
+
+        if (is.null(wordcount))
+        {
+                wordcount<-temp
+                colnames(wordcount)<-'totalcount'
+        }
+        else
+        {
+            wordcount<-merge(wordcount,temp,all=TRUE,by.x=)
+            wordcount$totalcount<-rowSums(wordcount[,c('totalcount','newcounts')],na.rm=TRUE)
+            wordcount$newcounts<-NULL
+        }
+        for(j in ls())
+        {
+            object.size(j)
+        }
+        cat(sprintf('merged %i of %i\n',i,split))
+
+    }
+    cat(sprintf('writing data to %s\n',outfile))
+    write.csv(wordcount,file=outfile)
+
+
+
+
+
+
+
+
+
+
+    # for(frag in 1:20)
+    # {
+        
+    # }
+
+
+
+
 
 }
+
+
 
 oldstuff<- function()
 {
@@ -142,7 +230,7 @@ oldstuff<- function()
 
     set.seed(97)
 
-    sample=0.2
+    sample=0.5
     # corpus_timeinfo<- system.time(corpus<-loadPastedCorpus(sample))
 
     blogfilename<-'./data/final/en_US/en_US.blogs.txt'
@@ -179,15 +267,20 @@ oldstuff<- function()
     pdf('./coverage_1a.pdf')
     print(g)
     dev.off()
+    h = g + ylim(low=0.95,high=1.0)
+
 
     pdf('./coverage_95.pdf')
-    print(g+ylim(low=0.95,high=1.0))
+    print(h)
     dev.off()
 
 }
 
+set.seed(97)
+# token1gram<-getTokeniser(1)
+# GetWordCounts('blogs',20,1,token1gram)
 
-
+oldstuff()
 
 
 
