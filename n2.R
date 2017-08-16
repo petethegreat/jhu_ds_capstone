@@ -48,159 +48,172 @@ trainTestValSplit<-function(trainfrac=0.8,testfrac=0.1,seedval=37)
 
 }
 
-GetWordCounts<-function(source=c('blogs','news','twitter'),n=1,rmstop=FALSE,temps=20,usetemps=20)
+PrepSource<-function(source=c('blogs','news','twitter'),temps=20,seedval=37)
+{
+    set.seed(seedval)
+    # break the input up into a bunch of small files
+    infile<-sprintf('./data/train_%s.txt',source)
+    textData<-readLines(infile)
+    cuts<-cut(runif(length(textData)),breaks=temps,labels=FALSE)
+    print(head(cuts))
+
+    for(i in 1:temps)
+    {
+        outfilename<-sprintf('./temp/temp_input_%s_%i.txt',source,i)
+        writeLines(textData[cuts==i],outfilename)
+    }
+
+
+}
+GetWordCounts<-function(source=c('blogs','news','twitter'),n=1,rmstop=FALSE,temps=20)
 {
 
     # source is either blogs, news or twitter
     # load the source as textdata
     # split into split parts (cut(seq_along(textdata)),split=split)
     # create a corpus for each file
+
+    # loop over temp files
     stopstr<-''
     if (rmstop)
     {
             stopstr<-'_rmstop'
     }
-    infile<-sprintf('./data/train_%s.txt',source)
-    outfile<-sprintf('./data/n%i_wordcount%s_%s.txt',n,stopstr,source)
 
-    # load lines
+    for( i in 1:temps)
+    {
+        infile<-sprintf('./temp/temp_input_%s_%i.txt',source,i)
+        cat('processing file ',i,': ',infile,'\n')
 
-    textData<-readLines(infile)
+        # load lines
+        textData<-readLines(infile)
+        # this is taking too long
+        textData<-iconv(textData, "latin1", "ASCII", sub="BADCHAR")
+        textData<-gsub('[^ ]*(BADCHAR)+[^ ]','',textData)
 
-    textData<-iconv(textData, "latin1", "ASCII", sub="BADCHAR")
-    textData<-gsub('[^ ]*(BADCHAR)+[^ ]','',textData)
-
-
-    #sample to split into train and test
-
-    mycorpus<-VCorpus(VectorSource(textData))
+        mycorpus<-VCorpus(VectorSource(textData))
         # clean it
-    mycorpus<-tm_map(mycorpus,content_transformer(tolower))
-    mycorpus<-tm_map(mycorpus,removeNumbers)
-    #mycorpus<-tm_map(mycorpus,removeWords, stopwords("english"))
-    mycorpus<-tm_map(mycorpus,removePunctuation)
-    mycorpus<-tm_map(mycorpus,stripWhitespace)
+        mycorpus<-tm_map(mycorpus,content_transformer(tolower))
+        mycorpus<-tm_map(mycorpus,removeNumbers)
+        #mycorpus<-tm_map(mycorpus,removeWords, stopwords("english"))
+        mycorpus<-tm_map(mycorpus,removePunctuation)
+        mycorpus<-tm_map(mycorpus,stripWhitespace)
 
-    cleaned<-lapply(mycorpus,as.character)
-    rm(mycorpus)
-    rm(textData)
-    cat('cleaned corpus\n')
+        cleaned<-lapply(mycorpus,as.character)
+        rm(mycorpus)
+        rm(textData)
+        cat('cleaned corpus\n')
+        mem<-sapply(mget(ls()),object.size)
+        print(mem)
 
 
-    cuts<-cut(runif(length(cleaned)),breaks=temps,labels=FALSE)
+        counts<-textcnt(cleaned,method='string',n=nval)#,persistent=TRUE,recursive=TRUE)
+        # meh<-unclass(counts)
+        # words<-names(counts)
+        df<-data.frame(counts=unclass(counts),term=names(counts))
+        # df$term<-row.names(df)
+        # df<-data.frame(term=words,counts=meh)
+        write.csv(df,file=sprintf('./temp/temp_%s_n%s_%i.csv',source,n,i),row.names=FALSE)
 
-    mem<-sapply(mget(ls()),object.size)
-    cat(mem,'\n')
-    for(i in 1:usetemps)
-    {
-        cat('counting ',i,' of ',dotemps,'\n')
-        counts<-textcnt(cleaned[cuts==i],method='string',n=nval)
-        meh<-unclass(counts)
-        words<-names(counts)
-        df<-data.frame(term=words,counts=meh)
-        write.csv(df,file=sprintf('./temp/temp_%i.csv',i),row.names=FALSE)
     }
+    
+    
+    
 
-    rm(cleaned)
 
-    df<-read.csv(sprintf('./temp/temp_%i.csv',i),stringsAsFactors=FALSE)
 
-    for(i in 2:usetemps)
-    {
-        cat('merging ',i,' of ',usetemps,'\n')
-        df2<-read.csv(sprintf('./temp/temp_%i.csv',i),stringsAsFactors=FALSE)
-        df<-merge(df,df2,by.x='term',by.y='term',all=TRUE,suffixes=c('','.new'))
-        df$counts<-rowSums(df[,c('counts','counts.new')])
-        df<-subset(df,select=c('term','counts'))
-        rm(df2)
-    }
-    cat('merging complete, sorting\n')
 
-    df<-df[order(df$counts,decreasing=TRUE),]
-    write.csv(df,file=outfile,row.names=FALSE)
-    cat('wrote to ',outfile)
+    # for(i in 1:usetemps)
+    # {
+    #     cat('counting ',i,' of ',dotemps,'\n')
+    #     counts<-textcnt(cleaned,method='string',n=nval,persistent=TRUE,recursive=FALSE)
+    #     # meh<-unclass(counts)
+    #     # words<-names(counts)
+    #     df<-data.frame(counts=unclass(counts),term=names(counts))
+    #     # df$term<-row.names(df)
+    #     # df<-data.frame(term=words,counts=meh)
+    #     write.csv(df,file=sprintf('./temp/temp_%i.csv',i),row.names=FALSE)
+    # }
+
+    # rm(cleaned)
+
+    # df<-read.csv(sprintf('./temp/temp_%i.csv',i),stringsAsFactors=FALSE)
+
+    # for(i in 2:usetemps)
+    # {
+    #     cat('merging ',i,' of ',usetemps,'\n')
+    #     df2<-read.csv(sprintf('./temp/temp_%i.csv',i),stringsAsFactors=FALSE)
+    #     df<-merge(df,df2,by.x='term',by.y='term',all=TRUE,suffixes=c('','.new'))
+    #     df$counts<-rowSums(df[,c('counts','counts.new')])
+    #     df<-subset(df,select=c('term','counts'))
+    #     rm(df2)
+    # }
+    # cat('merging complete, sorting\n')
+
+    # df<-df[order(df$counts,decreasing=TRUE),]
+    # write.csv(df,file=outfile,row.names=FALSE)
+    # cat('wrote to ',outfile)
 
 }
 
 # 100k works for blogs.
 # 100k - about 45 secs
 # 200k - about 90 secs
+MergeTempCounts<-function(source=c('blogs','news','twitter'),n=1,rmstop=FALSE,temps=20)
+{
+    stopstr<-''
+    if (rmstop)
+    {
+            stopstr<-'_rmstop'
+    }
+    outfilename<-sprintf('./data/n%i_wordcount%s_%s.csv',n,stopstr,source)
 
+    df<-read.csv(file=sprintf('./temp/temp_%s_n%i_%i.csv',source,n,1),stringsAsFactors=FALSE)
+
+    for(i in 2:temps)
+    {
+        cat('merging ',i,' of ',temps,'\n')
+        df2<-read.csv(file=sprintf('./temp/temp_%s_n%i_%i.csv',source,n,i),stringsAsFactors=FALSE)
+        df<-merge(df,df2,by.x='term',by.y='term',all=TRUE,suffixes=c('','.new'),na.rm=TRUE)
+        rm(df2)
+        df$counts<-rowSums(df[,c('counts','counts.new')])
+        df<-subset(df,select=c('term','counts'))
+        
+    }
+    df<-df[order(df$counts,decreasing=TRUE),]
+    write.csv(df,outfilename,row.names=FALSE)
+
+}
 
 nval<-1
-nolines<-200000
-GetWordCounts(source='twitter',n=1,temps=40,usetemps=2)
+# nolines<-200000
 
-# trainTestValSplit()
-# 150s to do 2-grams at 200k lines
+# for( s in c('twitter','news'))
+# {
+# PrepSource(s,temps=40)
+# GetWordCounts(source=s,n=nval,temps=40)
+# MergeTempCounts(source=s,n=nval,temps=40)
+# }
+thetemps<-30
+# only use 3/4 for the 3 and 4 grams
 
-# cat('doing blogs\n')
-# time<-system.time(GetWordCounts('blogs',n=nval,lines=nolines))
-# cat('time: ',time,'\n')
+# PrepSource('news',temps=thetemps)
+# PrepSource('blogs',temps=thetemps)
+# PrepSource('twitter',temps=thetemps)
+# nval<-2
+# for( s in c('twitter','news'))
+#     {
+    
+#     GetWordCounts(source=s,n=nval,temps=thetemps)
+#     MergeTempCounts(source=s,n=nval,temps=thetemps)
+#     }
 
-# cat('doing news\n')
-# time<-system.time(GetWordCounts('news',n=nval,lines=nolines))
-# cat('time: ',time,'\n')
-
-# cat('doing twitter\n')
-# time<-system.time(GetWordCounts('twitter',n=nval,lines=nolines))
-# cat('time: ',time,'\n')
-
-# nval<-4
-# cat('doing blogs\n')
-# time<-system.time(GetWordCounts('blogs',n=nval,lines=nolines))
-# cat('time: ',time,'\n')
-
-# cat('doing news\n')
-# time<-system.time(GetWordCounts('news',n=nval,lines=nolines))
-# cat('time: ',time,'\n')
-
-# cat('doing twitter\n')
-# time<-system.time(GetWordCounts('twitter',n=nval,lines=nolines))
-# cat('time: ',time,'\n')
-
-OldGetWordCounts<-function(source=c('blogs','news','twitter'),n=1,lines=1000)
+for (nval in 3:4)
 {
-
-    # source is either blogs, news or twitter
-    # load the source as textdata
-    # split into split parts (cut(seq_along(textdata)),split=split)
-    # create a corpus for each file
-    infile<-sprintf('./data/final/en_US/en_US.%s.txt',source)
-    outfile<-sprintf('./data/n%i_wordcount_%s.txt',n,source)
-    testfile<-sprintf('./data/test_%s.txt',source)
-
-    # load lines
-
-    textData<-readLines(infile,n=lines)
-
-    textData<-iconv(textData, "latin1", "ASCII", sub="BADCHAR")
-    textData<-gsub('[^ ]*(BADCHAR)+[^ ]','',textData)
-
-
-    #sample to split into train and test
-
-    mycorpus<-VCorpus(VectorSource(textData))
-        # clean it
-    mycorpus<-tm_map(mycorpus,content_transformer(tolower))
-    mycorpus<-tm_map(mycorpus,removeNumbers)
-    #mycorpus<-tm_map(mycorpus,removeWords, stopwords("english"))
-    mycorpus<-tm_map(mycorpus,removePunctuation)
-    mycorpus<-tm_map(mycorpus,stripWhitespace)
-
-    cleaned<-lapply(mycorpus,as.character)
-    rm(mycorpus)
-
-    counts<-textcnt(cleaned,method='string',n=nval)
-
-
-    meh<-unclass(counts)
-    words<-names(counts)
-
-    df<-data.frame(term=words,counts=meh)
-
-    df<-df[order(df$counts,decreasing=TRUE),]
-    write.csv(df,file=outfile,row.names=FALSE)
-    cat('wrote to ',outfile)
-
+    for( s in c('blogs','twitter','news'))
+    {
+    
+    GetWordCounts(source=s,n=nval,temps=thetemps)
+    MergeTempCounts(source=s,n=nval,temps=thetemps)
+    }
 }
