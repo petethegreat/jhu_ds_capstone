@@ -7,7 +7,8 @@
 
 library(tm)
 library(tau)
-library(dplyr)
+library(data.table)
+library(dtplyr)
 
 
 
@@ -174,14 +175,50 @@ MergeTempCounts<-function(source=c('blogs','news','twitter'),n=1,rmstop=FALSE,te
     {
         cat('merging ',i,' of ',temps,'\n')
         df2<-read.csv(file=sprintf('./temp/temp_%s_n%i_%i.csv',source,n,i),stringsAsFactors=FALSE)
-        df<-merge(df,df2,by.x='term',by.y='term',all=TRUE,suffixes=c('','.new'),na.rm=TRUE)
+        df<-merge(df,df2,by.x='term',by.y='term',all=TRUE,suffixes=c('','.new'))
         rm(df2)
-        df$counts<-rowSums(df[,c('counts','counts.new')])
+        df$counts<-rowSums(df[,c('counts','counts.new')],na.rm=TRUE)
         df<-subset(df,select=c('term','counts'))
+        write.csv(df,sprintf('./temp_merge_%s_n%i_i%i.csv',source,n,i),row.names=FALSE)
         
     }
     df<-df[order(df$counts,decreasing=TRUE),]
     write.csv(df,outfilename,row.names=FALSE)
+
+}
+
+MergeTempCountsTable<-function(source=c('blogs','news','twitter'),n=1,rmstop=FALSE,temps=20)
+{
+    stopstr<-''
+    if (rmstop)
+    {
+            stopstr<-'_rmstop'
+    }
+    outfilename<-sprintf('./data/n%i_wordcount%s_%s.csv',n,stopstr,source)
+
+    df<-data.table(read.csv(file=sprintf('./temp/temp_%s_n%i_%i.csv',source,n,1),stringsAsFactors=FALSE),key='term')
+
+    for(i in 2:temps)
+    {
+        cat('merging ',i,' of ',temps,'\n')
+        df2<-data.table(read.csv(file=sprintf('./temp/temp_%s_n%i_%i.csv',source,n,i),stringsAsFactors=FALSE),key='term')
+        df<-merge(df,df2,by.x='term',by.y='term',all=TRUE,suffixes=c('','.new'),sort=TRUE)
+        rm(df2)
+        df$counts<-rowSums(df[,.(counts,counts.new)],na.rm=TRUE)
+        df<-subset(df,select=c('term','counts'))
+        write.csv(df,sprintf('./temp/temp_merge_%s_n%i_i%i.csv',source,n,i),row.names=FALSE)
+        oldfn<-sprintf('./temp/temp_merge_%s_n%i_i%i.csv',source,n,i-1)
+        if (file.exists(oldfn)) file.remove(oldfn)
+
+    }
+    df<-df[order(df$counts,decreasing=TRUE),]
+    write.csv(df,outfilename,row.names=FALSE)
+    for( i in 1:temps)
+    {
+        oldfn<-sprintf('./temp/temp_%s_n%i_%i.csv',source,n,1)
+        if (file.exists(oldfn)) file.remove(oldfn)
+
+    }
 
 }
 
@@ -208,12 +245,14 @@ thetemps<-30
 #     MergeTempCounts(source=s,n=nval,temps=thetemps)
 #     }
 
-for (nval in 3:4)
+# MergeTempCounts(source='news',n=3,temps=thetemps)
+# MergeTempCountsTable(source='blogs',n=5,temps=thetemps)
+for (nval in 3:1)
 {
     for( s in c('blogs','twitter','news'))
     {
     
     GetWordCounts(source=s,n=nval,temps=thetemps)
-    MergeTempCounts(source=s,n=nval,temps=thetemps)
+    MergeTempCountsTable(source=s,n=nval,temps=thetemps)
     }
 }
