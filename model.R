@@ -1,43 +1,78 @@
 #!/usr/bin/Rscript
 library(reshape2)
 
-library(dplyr)
-coverage<-function(n=1,thresh=0,printStuff=FALSE)
+library(data.table)
+library(dtplyr)
+
+coverage<-function(n=1,thresh=0,printStuff=FALSE,plot=FALSE)
 {
-blogsdf<-read.csv(sprintf('./data/n%i_wordcount_blogs.txt',n),stringsAsFactors=FALSE)
-newsdf<-read.csv(sprintf('./data/n%i_wordcount_news.txt',n),stringsAsFactors=FALSE)
-twitterdf<-read.csv(sprintf('./data/n%i_wordcount_twitter.txt',n),stringsAsFactors=FALSE)
+    fname<-sprintf('./data/n%i_wordcount_blogs.csv',n)
+    cat('loading ',fname,'\n')
+    blogsdf<-data.table(read.csv(fname,stringsAsFactors=FALSE),key='term')
+
+    fname<-sprintf('./data/n%i_wordcount_news.csv',n)
+    cat('loading ',fname,'\n')
+    newsdf<-data.table(read.csv(fname,stringsAsFactors=FALSE),key='term')
+
+    fname<-sprintf('./data/n%i_wordcount_twitter.csv',n)
+    cat('loading ',fname,'\n')
+    twitterdf<-data.table(read.csv(fname,stringsAsFactors=FALSE),key='term')
 
 
-names(blogsdf)<-c('term','counts.blogs')
-names(newsdf)<-c('term','counts.news')
-names(twitterdf)<-c('term','counts.twitter')
+    names(blogsdf)<-c('term','counts.blogs')
+    names(newsdf)<-c('term','counts.news')
+    names(twitterdf)<-c('term','counts.twitter')
 
-all<-merge(blogsdf,newsdf,by.x='term',by.y='term',all=TRUE)#,suffixes=c('.blogs','.news'))
-all<-merge(all,twitterdf,by.x='term',by.y='term',all=TRUE)#,suffixes=c('.all','.twitter'))
+    # all<-merge(blogsdf,newsdf,by.x='term',by.y='term',all=TRUE)#,suffixes=c('.blogs','.news'))
+    all<-merge(blogsdf,newsdf,by.x='term',by.y='term',all=TRUE,sort=TRUE)
+    rm(blogsdf)
+    rm(newsdf)
+    all<-merge(all,twitterdf,by.x='term',by.y='term',all=TRUE,sort=TRUE)
+    rm(twitterdf)
 
 
 
-
-
-
-
-all$counts.total <- rowSums(all[,c('counts.blogs','counts.news','counts.twitter')],na.rm=TRUE)
-all<-all[order(all$counts.total,decreasing=TRUE),]
-totalwords<-sum(all$counts.total)
-if (printStuff)
-{
-    cat(sprintf('%10s %8s %5s\n','thresh','terms','coverage'))
-    for(t in c(1,2,5,10,20))
+    all$counts.total <- rowSums(all[,c('counts.blogs','counts.news','counts.twitter')],na.rm=TRUE)
+    all<-all[order(-counts.total)]
+    # all<-all[order(all$counts.total,decreasing=TRUE),]
+    totalwords<-all[,sum(counts.total)]
+    if (printStuff)
     {
-        thesewords<-(all$counts.total >= t)
-        thisterms<-sum(thesewords)
-        thiscover<-sum(all$counts.total[thesewords])/totalwords
+        cat(sprintf('%10s %8s %5s\n','thresh','terms','coverage'))
+        for(t in c(1,2,5,10,20))
+        {
+            thesewords<-all[counts.total >= t]
+            thisterms<-thesewords[,.N][1]
+            thiscover<-thesewords[,sum(counts.total)][1]/totalwords
 
-        cat(sprintf('%10i %6i %0.4g\n',t,thisterms,thiscover))
+            cat(sprintf('%10i %6i %0.4g\n',t,thisterms,thiscover))
 
+        }
     }
-}
+
+    if(plot)
+    {
+        library(ggplot2)
+        fname<-sprintf('./plots/frequency_plot_n%i.pdf',n)
+        g<-ggplot(data=all,aes(x=seq_along(term),y=counts.total/totalwords)) + geom_line(color='red') +
+        scale_x_log10() + scale_y_log10() + 
+        labs(title='term frequency vs vocabulary size',subtitle=sprintf('%i-grams',n),x='vocab size',y='relative word frequency')
+        ggsave(fname,g)
+
+        fname<-sprintf('./plots/coverage_plot_n%i.pdf',n)
+        g<-ggplot(data=all,aes(x=seq_along(term),y=cumsum(counts.total)/totalwords)) + geom_line(color='red') +
+        scale_x_log10() + 
+        labs(title='term coverage vs vocabulary size',subtitle=sprintf('%i-grams',n),x='vocab size',y='corpus coverage')+
+        geom_hline(yintercept=0.95,color='blue',linetype=3)+
+        annotate('text',5,0.94,label='95% coverage')+
+        geom_hline(yintercept=0.99,color='blue',linetype=2)+
+        annotate('text',5,0.98,label='99% coverage')
+        
+
+        ggsave(fname,g)
+    }
+
+
 
 # coverage<-cumsum(all$counts.total)/sum(all$counts.total)
 # head(all)
@@ -48,10 +83,13 @@ if (printStuff)
 #     cat(sprintf('require %i words for %.2g coverage\n',sum(coverage < cno),cno))
 # }
 
+belowThresh<- totalWords - all[,sum(counts.total)]
+all<-all[counts.total >= thresh,.(term,counts.total)]
+rbind(all,list('UNKNOWN',belowThresh))
 
 
 
-return(all[all$counts.total>=thresh,c('term','counts.total')])
+return(all[counts.total>=thresh,.(term,counts.total)])
 
 # total=sum(blogsdf$counts)
 # blogsdf$freq<-blogsdf$count/total
@@ -209,12 +247,32 @@ doPredictions<-function()
 
 }
 
-# thresh    terms coverage
-#          1 275646 1
-#          2 118496 0.9909
-#          5  62115 0.9824
-#         10  41641 0.9746
-#         20  28186 0.964
+ # thresh    terms coverage
+ #         1 634420 1
+ #         2 241911 0.9934
+ #         5 118840 0.9881
+ #        10  78049 0.9836
+ #        20  53338 0.978
+
+
+# keep words occuring at least 5 times, 99% coverage
+
+# closed vocab
+# keep fixed vocab size, the ~120k words that give 99% coverage (occur at least 5 times)
+# when we clean things, replace words not in our vocab by 'UNKNOWN'
+
+
+# smoothing
+
+
+
+
+
+# Discounting
+
+
+
+
 
 # will require 10 counts, gives 97.5% coverage
 # nval<-4
@@ -226,8 +284,8 @@ doPredictions<-function()
 # head(n_terms)
 # dim(n_terms)
 
-doPredictions()
-
+# doPredictions()
+coverage(n=1,thresh=0,printStuff=TRUE,plot=TRUE)
 
 # predict
 
