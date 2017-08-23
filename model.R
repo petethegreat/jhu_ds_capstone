@@ -8,28 +8,28 @@ coverage<-function(n=1,thresh=0,printStuff=FALSE,plot=FALSE)
 {
     fname<-sprintf('./data/n%i_wordcount_blogs.csv',n)
     cat('loading ',fname,'\n')
-    blogsdf<-data.table(read.csv(fname,stringsAsFactors=FALSE),key='term')
+    all<-data.table(read.csv(fname,stringsAsFactors=FALSE),key='term')
+    names(all)<-c('term','counts.blogs')
 
     fname<-sprintf('./data/n%i_wordcount_news.csv',n)
     cat('loading ',fname,'\n')
     newsdf<-data.table(read.csv(fname,stringsAsFactors=FALSE),key='term')
+    names(newsdf)<-c('term','counts.news')
+
+    cat('merging blogs and news\n')
+    all<-merge(all,newsdf,by.x='term',by.y='term',all=TRUE,sort=TRUE)
+    cat('merged, deleting news\n')
+    rm(newsdf)
 
     fname<-sprintf('./data/n%i_wordcount_twitter.csv',n)
     cat('loading ',fname,'\n')
     twitterdf<-data.table(read.csv(fname,stringsAsFactors=FALSE),key='term')
-
-
-    names(blogsdf)<-c('term','counts.blogs')
-    names(newsdf)<-c('term','counts.news')
     names(twitterdf)<-c('term','counts.twitter')
 
-    # all<-merge(blogsdf,newsdf,by.x='term',by.y='term',all=TRUE)#,suffixes=c('.blogs','.news'))
-    all<-merge(blogsdf,newsdf,by.x='term',by.y='term',all=TRUE,sort=TRUE)
-    rm(blogsdf)
-    rm(newsdf)
+    cat('merging twitter\n')
     all<-merge(all,twitterdf,by.x='term',by.y='term',all=TRUE,sort=TRUE)
     rm(twitterdf)
-
+    
 
 
     all$counts.total <- rowSums(all[,c('counts.blogs','counts.news','counts.twitter')],na.rm=TRUE)
@@ -83,7 +83,7 @@ coverage<-function(n=1,thresh=0,printStuff=FALSE,plot=FALSE)
 #     cat(sprintf('require %i words for %.2g coverage\n',sum(coverage < cno),cno))
 # }
 
-belowThresh<- totalWords - all[,sum(counts.total)]
+belowThresh<- totalwords - all[,sum(counts.total)]
 all<-all[counts.total >= thresh,.(term,counts.total)]
 rbind(all,list('UNKNOWN',belowThresh))
 
@@ -117,9 +117,13 @@ clean<-function(covered,n)
     }
     else
     {
-        wordcols<-colsplit(covered$term,' ',wordcolnames)
+        # wordcols<-colsplit(covered$term,' ',wordcolnames)
         # names(wordcols)<-wordcolnames
-        covered<-data.frame(wordcols,subset(covered,select=-c(term)))
+        # covered[,wordcolnames := colsplit(.(term),' ',wordcolnames) ,]
+        covered[,(wordcolnames) := tstrsplit(term,' ',fixed=TRUE)]
+        covered<-covered[,term:=NULL]
+        # return(covered[,(term) := NULL])
+        #<-data.table(data.frame(wordcols,subset(covered,select=-c(term)))
 
     }
 return(covered)
@@ -247,12 +251,7 @@ doPredictions<-function()
 
 }
 
- # thresh    terms coverage
- #         1 634420 1
- #         2 241911 0.9934
- #         5 118840 0.9881
- #        10  78049 0.9836
- #        20  53338 0.978
+ 
 
 
 # keep words occuring at least 5 times, 99% coverage
@@ -285,7 +284,37 @@ doPredictions<-function()
 # dim(n_terms)
 
 # doPredictions()
-coverage(n=1,thresh=0,printStuff=TRUE,plot=TRUE)
+# coverage(n=1,thresh=0,printStuff=TRUE,plot=TRUE)
+# thresh    terms coverage
+ #         1 634420 1
+ #         2 241911 0.9934
+ #         5 118840 0.9881
+ #        10  78049 0.9836
+ #        20  53338 0.978
+
+# used threshold of 2 for 2 and 3 grams, will use 5 for 4 and 5 grams
+nval<-4
+thresh<-5
+outname<-sprintf('./data/cleaned_counts_n%i.csv',nval)
+covered<-coverage(n=nval,thresh=thresh,printStuff=TRUE,plot=FALSE)
+cleaned<-clean(covered,n=nval)
+rm(covered)
+head(cleaned)
+# want to discount and convert to probability before writing
+write.csv(cleaned[order(-counts.total)],file=outname,row.names=FALSE)
+
+
+# todo: 
+# clean our ngrams
+# convert things to probability
+# define perplexity and estimate coefficients
+# do quiz doPredictions
+
+
+# Model:
+# kneser kney smoothing
+# probability is discounted ngram counts + lambda Pcontinuation, where Pcontinuation is the number of bigrams that are completed by word under consideration.
+# knesser kney shouldn't be too hard. We'll need to compute perplexity and come up with some coefficients.
 
 # predict
 
