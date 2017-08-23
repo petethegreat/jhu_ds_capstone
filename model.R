@@ -4,17 +4,19 @@ library(reshape2)
 library(data.table)
 library(dtplyr)
 
-coverage<-function(n=1,thresh=0,printStuff=FALSE,plot=FALSE)
+coverage<-function(n=1,thresh=0,printStuff=FALSE,plot=FALSE,thresh2=0)
 {
     fname<-sprintf('./data/n%i_wordcount_blogs.csv',n)
     cat('loading ',fname,'\n')
     all<-data.table(read.csv(fname,stringsAsFactors=FALSE),key='term')
     names(all)<-c('term','counts.blogs')
+    all<-all[counts.blogs >= thresh2,]
 
     fname<-sprintf('./data/n%i_wordcount_news.csv',n)
     cat('loading ',fname,'\n')
     newsdf<-data.table(read.csv(fname,stringsAsFactors=FALSE),key='term')
     names(newsdf)<-c('term','counts.news')
+    newsdf<-newsdf[counts.news >= thresh2,]
 
     cat('merging blogs and news\n')
     all<-merge(all,newsdf,by.x='term',by.y='term',all=TRUE,sort=TRUE)
@@ -25,6 +27,7 @@ coverage<-function(n=1,thresh=0,printStuff=FALSE,plot=FALSE)
     cat('loading ',fname,'\n')
     twitterdf<-data.table(read.csv(fname,stringsAsFactors=FALSE),key='term')
     names(twitterdf)<-c('term','counts.twitter')
+    twitterdf<-twitterdf[counts.twitter >= thresh2,]
 
     cat('merging twitter\n')
     all<-merge(all,twitterdf,by.x='term',by.y='term',all=TRUE,sort=TRUE)
@@ -295,8 +298,9 @@ doPredictions<-function()
 # used threshold of 2 for 2 and 3 grams, will use 5 for 4 and 5 grams
 nval<-4
 thresh<-5
+thresh2=2
 outname<-sprintf('./data/cleaned_counts_n%i.csv',nval)
-covered<-coverage(n=nval,thresh=thresh,printStuff=TRUE,plot=FALSE)
+covered<-coverage(n=nval,thresh=thresh,printStuff=TRUE,plot=FALSE,thresh2=thresh2)
 cleaned<-clean(covered,n=nval)
 rm(covered)
 head(cleaned)
