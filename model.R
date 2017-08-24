@@ -134,7 +134,7 @@ return(covered)
 
 
 
-doPredictions<-function()
+oldDoPredictions<-function()
 {
     n1df<-read.csv('./data/cleaned_n1.csv',stringsAsFactors=FALSE)
     n2df<-read.csv('./data/cleaned_n2.csv',stringsAsFactors=FALSE)
@@ -246,14 +246,149 @@ doPredictions<-function()
     predict('and keep the faith during the')
     predict('ever seen, then you must be')
 
-    
-
-
-    
 
 
 }
 
+DoPredictions<-function()
+{
+
+
+# Will use interpolated kneser ney smoothing
+
+# Ideally, use highest order ngrams (n=5 for us here, say)
+# We need to save some probability for ngrams that weren't encountered in our training set, so we discount.
+
+# The rough 5-gram probability is P5(w|w1_w4) = [c(w1_w4w) -d]/c(w1_w4), where d is our discount (0<d<1)
+
+# We then interpolate, and assign the discounted probability mass to our 4 gram distribution
+
+# P = P5(w|w1_w4) + lambda(w1-w4) P4(w,w2_w4)
+# If P5 is zero, then w is occuring in an unknown context, we haven't seen this 5 gram before.
+# We then use information from the 4 gram distribution, but instead of assigning probability proportional to c(w2_w4w)/c(w2_w4),
+# we consider the number of times that w3w4w completes 4 grams, so our 4 gram probability is count( c(xw3w4w) > 0, for all x)/count(c(vxyz) >0 for all vxyz)
+
+# Similarly, we discount our 4 gram counts, and reallocate the discounted probability to our 3 grams, which we discount, and realocate to 2, etc.
+
+
+# load all our data
+
+cat('loading data\n')
+nmax<-5 # have only up to 5 grams
+loaddf<-function(i)
+{
+    fname<-sprintf('./data/cleaned_counts_n%i.csv',i)
+    return(data.table(read.csv(fname,stringsAsFactors=FALSE)))
+
+}
+
+dflist<-lapply(loaddf,1:nmax)
+
+    # fname<-sprintf('./data/cleaned_counts_n%i.csv',5)
+    # n5df<-data.table(read.csv(fname,stringsAsFactors=FALSE))
+    # setkey(n5df,w1,w2,w3,w4,w5) # want to predict based on first 4
+
+    # fname<-sprintf('./data/cleaned_counts_n%i.csv',4)
+    # n4df<-data.table(read.csv(fname,stringsAsFactors=FALSE))
+    # setkey(n4df,w2,w3,w4,w1) # want to know when (w2,w3,w4) completes something
+
+    # fname<-sprintf('./data/cleaned_counts_n%i.csv',3)
+    # n3df<-data.table(read.csv(fname,stringsAsFactors=FALSE))
+    # setkey(n3df,w2,w3,w1) # want to know when (w3,w4) completes something
+
+    # fname<-sprintf('./data/cleaned_counts_n%i.csv',2)
+    # n2df<-data.table(read.csv(fname,stringsAsFactors=FALSE))
+    # setkey(n2df,w2,w1) # want to know when (w2) completes something
+
+    # fname<-sprintf('./data/cleaned_counts_n%i.csv',1)
+    # n1df<-data.table(read.csv(fname,stringsAsFactors=FALSE))
+    # setkey(n1df,w1) # want to know when (w2) completes something
+    # cat('data loaded')
+
+
+    Dval<-0.4 # discount, could train this maybe
+
+
+    predictCleaned<-function(str)
+    {
+        # str should be a character vector of words
+
+        # trim history, only need last (n-1) words
+        if (length(str) > (nmax-1)) str<-str[-seq_len(length(str) -(nmax-1))]
+
+        # do highest order stuff first
+        # check sorting, rekey if needed
+        # compute discounted probabilities
+        # move to next order
+
+        # for not highest order
+        # group/order by the trailing 3 gram (count how many 4 grams this 3 gram completes)
+        # compute probabilities
+        # order by prob
+        # compute lambda for this order (or next order?)
+
+
+        # sum up total probs, get next word
+
+
+         
+
+
+
+        # compute discounted probabilities
+        # compute 
+
+
+
+
+
+
+
+
+    }
+
+
+    predict<-function(inputstr)
+    {
+        # prepare input
+        thestring<-iconv(inputstr, "latin1", "ASCII", sub="BADCHAR")
+        thestring<-gsub('[^ ]*(BADCHAR)+[^ ]','',thestring)
+        thestring<-tolower(thestring)
+        thestring<-gsub('\\s+',' ',thestring)
+        thestring<-gsub('^ ','',thestring)
+        thestring<-gsub(' $','',thestring)
+        thestring<-gsub('[^a-zA-Z ]','',thestring)
+
+        # print(inputstr)
+        # print(thestring)
+
+
+        words<-strsplit(thestring,' ')
+        for (vec in words)
+        {
+            predictCleaned(vec)
+        }
+        # this returns a list of character vectors, each vector containing single words
+
+
+
+
+
+    }
+
+    predict(c('you never know until you ','my dog has a '))
+
+
+
+
+
+
+
+
+
+
+
+}
  
 
 
@@ -296,17 +431,18 @@ doPredictions<-function()
  #        20  53338 0.978
 
 # used threshold of 2 for 2 and 3 grams, will use 5 for 4 and 5 grams
-nval<-4
-thresh<-5
-thresh2=2
-outname<-sprintf('./data/cleaned_counts_n%i.csv',nval)
-covered<-coverage(n=nval,thresh=thresh,printStuff=TRUE,plot=FALSE,thresh2=thresh2)
-cleaned<-clean(covered,n=nval)
-rm(covered)
-head(cleaned)
-# want to discount and convert to probability before writing
-write.csv(cleaned[order(-counts.total)],file=outname,row.names=FALSE)
+# nval<-5
+# thresh<-5
+# thresh2=2
+# outname<-sprintf('./data/cleaned_counts_n%i.csv',nval)
+# covered<-coverage(n=nval,thresh=thresh,printStuff=TRUE,plot=FALSE,thresh2=thresh2)
+# cleaned<-clean(covered,n=nval)
+# rm(covered)
+# head(cleaned)
+# # want to discount and convert to probability before writing
+# write.csv(cleaned[order(-counts.total)],file=outname,row.names=FALSE)
 
+DoPredictions()
 
 # todo: 
 # clean our ngrams
