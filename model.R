@@ -278,11 +278,21 @@ nmax<-5 # have only up to 5 grams
 loaddf<-function(i)
 {
     fname<-sprintf('./data/cleaned_counts_n%i.csv',i)
+    cat('loading ',fname,'\n')
     return(data.table(read.csv(fname,stringsAsFactors=FALSE)))
 
 }
 
-dflist<-lapply(loaddf,1:nmax)
+dflist<-lapply(1:nmax,loaddf)
+# setkey(dflist[[1]],cols=c('w1'))
+# setkey(dflist[[2]],cols=c('w1','w2'))
+# setkey(dflist[[3]],cols=c('w1','w2','w3'))
+# setkey(dflist[[4]],cols=c('w1','w2','w3','w4'))
+
+# head(dflist[[1]])
+# setkey(dflist[[1]],w1,w2,w3,w4)
+
+
 
     # fname<-sprintf('./data/cleaned_counts_n%i.csv',5)
     # n5df<-data.table(read.csv(fname,stringsAsFactors=FALSE))
@@ -309,38 +319,70 @@ dflist<-lapply(loaddf,1:nmax)
     Dval<-0.4 # discount, could train this maybe
 
 
-    predictCleaned<-function(str)
+    predictCleaned<-function(instr)
     {
-        # str should be a character vector of words
 
         # trim history, only need last (n-1) words
-        if (length(str) > (nmax-1)) str<-str[-seq_len(length(str) -(nmax-1))]
 
-        # do highest order stuff first
-        # check sorting, rekey if needed
-        # compute discounted probabilities
-        # move to next order
-
-        # for not highest order
-        # group/order by the trailing 3 gram (count how many 4 grams this 3 gram completes)
-        # compute probabilities
-        # order by prob
-        # compute lambda for this order (or next order?)
+        if (length(instr) > (nmax-1))
+        {
+            instr<-instr[-seq_len(length(instr) -(nmax-1))]
+        }
+        cat(instr,'\n')
 
 
-        # sum up total probs, get next word
+        thisnmax<-min(length(instr),nmax-1)+1
+        # if the string contains 2 words, then we'll want to use 3 grams and lower. 
+        foundcontext<-FALSE
+        # have we found a match for the supplied history?
+        highcounts<-NULL
+        while(!foundcontext && thisnmax >1)
+        {
+
+            thestr<-instr[-seq_len(length(instr)-thisnmax +1) ]
+            cat(thestr,'\n')
+            cat('trying nmax = ',thisnmax,'\n')
+            # want to look up the nth word using the first n-1 words
+            # if theres no match for the first n-1 words, then back off to n-1 grams and try looking up the first n-2 words
+            # if our 5 grams are useless, then treat our 4 grams as highest order
+            collist<-paste('w',1:thisnmax, sep='')
+            highest<-dflist[[thisnmax]]
+            theexpr<-paste(c('setkey(highest,',
+                    paste(collist[1:thisnmax-1],collapse=','),
+                    ')'),collapse='')
+            eval(parse(text=theexpr))
+
+            #highest is now sorted appropriately, see if there are any context matches
+            temp<-paste(collist[1:thisnmax-1],' == thestr[',1:(thisnmax-1),']',sep='')
+            temp<-paste(temp,collapse=' & ')
+            resultexpr<-paste(c('highcounts<-highest[',temp,',',paste('.(word=w',thisnmax,collapse='',sep=''),',count=counts.total)]'),collapse='')
+            cat(resultexpr,'\n')
+            eval(parse(text=resultexpr))
 
 
-         
+            if(nrow(highcounts) >0)
+            {
+                cat('nrow = ',nrow(highcounts[order(-count)]),'\n')
+                foundcontext<-TRUE
+                # cat(head(highcounts[order(-counts.total)]),'\n')
+            }
 
+            # foundcontext<-isTRUE(nrow(highcounts) > 0 ) 
+            # if there were no results, decetrnment thisnmax
+            if (!foundcontext) {thisnmax<-thisnmax -1}
+            # decrement thisnmax
 
+        }
 
-        # compute discounted probabilities
-        # compute 
+        # cat(head(highcounts),'\n')
+        hc2<-highcounts[,.(word,prob = (count-Dval)/sum(count))]
+        hc2[prob <0,prob:=0]
+        print(head(hc2))
+        lval<-1.0 - sum(highcounts$prob) # probability mass left for lower orders
 
-
-
-
+        # now do continuation counts for lower orders
+        
+        # highcounts is good. Do the kneser ney smoothing
 
 
 
