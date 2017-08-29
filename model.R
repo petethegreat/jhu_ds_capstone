@@ -4,6 +4,11 @@ library(reshape2)
 library(data.table)
 library(dtplyr)
 
+
+`%+na%` <- function(x,y) {ifelse( is.na(x), y, ifelse( is.na(y), x, x+y) )}
+# sum data table columns, ignoring NA
+# https://stackoverflow.com/questions/13106645/using-in-data-table-to-sum-the-values-of-two-columns-in-r-ignoring-nas
+
 coverage<-function(n=1,thresh=0,printStuff=FALSE,plot=FALSE,thresh2=0)
 {
     fname<-sprintf('./data/n%i_wordcount_blogs.csv',n)
@@ -340,7 +345,7 @@ dflist<-lapply(1:nmax,loaddf)
         {
 
             thestr<-instr[-seq_len(length(instr)-thisnmax +1) ]
-            cat(thestr,'\n')
+            # cat(thestr,'\n')
             cat('trying nmax = ',thisnmax,'\n')
             # want to look up the nth word using the first n-1 words
             # if theres no match for the first n-1 words, then back off to n-1 grams and try looking up the first n-2 words
@@ -356,13 +361,13 @@ dflist<-lapply(1:nmax,loaddf)
             temp<-paste(collist[1:thisnmax-1],' == thestr[',1:(thisnmax-1),']',sep='')
             temp<-paste(temp,collapse=' & ')
             resultexpr<-paste(c('highcounts<-highest[',temp,',',paste('.(word=w',thisnmax,collapse='',sep=''),',count=counts.total)]'),collapse='')
-            cat(resultexpr,'\n')
+            # cat(resultexpr,'\n')
             eval(parse(text=resultexpr))
 
 
             if(nrow(highcounts) >0)
             {
-                cat('nrow = ',nrow(highcounts[order(-count)]),'\n')
+                # cat('nrow = ',nrow(highcounts[order(-count)]),'\n')
                 foundcontext<-TRUE
                 # cat(head(highcounts[order(-counts.total)]),'\n')
             }
@@ -375,10 +380,57 @@ dflist<-lapply(1:nmax,loaddf)
         }
 
         # cat(head(highcounts),'\n')
-        hc2<-highcounts[,.(word,prob = (count-Dval)/sum(count))]
-        hc2[prob <0,prob:=0]
-        print(head(hc2))
-        lval<-1.0 - sum(highcounts$prob) # probability mass left for lower orders
+        # print(head(highcounts))
+        wordprobs<-highcounts[,.(word,prob = (count-Dval)/sum(count))]
+        wordprobs[prob <0,prob:=0]
+        print(head(wordprobs))
+        lval<-1.0 - sum(wordprobs$prob) # probability mass left for lower orders
+
+        # recursively loop over lower orders
+        for( j in (thisnmax-1):2)
+        {
+            # get the continuationcounts for this order
+            thedata<-dflist[[j]]
+            
+            # sort by last word. if we're doing trigrams, we want to get a word's completion count for unique bigrams
+            thecol<-paste('w',j, sep='',collapse='')
+            theexpr<-paste(c('setkey(thedata,',thecol,')',collapse='',sep=''))
+            eval(parse(text=theexpr))
+
+            # get continuation counts
+            theexpr<-paste(c('contcounts<-thedata[,.(word=',thecol,',count=.N),by=',thecol,']'),sep='',collapse='')
+            eval(parse(text=theexpr))
+            # apply discounts 
+            contcounts<-contcounts[,.(word,count=count-Dval)]
+            contcounts<-contcounts[count < 0,count:=0]
+            totalcounts<-nrow(thedata) # number of unique n-grams before discounts applied
+
+            # convert counts to prob, multiply by lambda
+            contcounts[,prob:=count/totalcounts*lval]
+            
+            # merge these probabilities with those from higher orders
+            wordprobs<-merge(wordprobs,contcounts[,.(word,prob)],by.x='word',by.y='word',all=TRUE,suffixes=c('.total','.new'))
+            wordprobs<-wordprobs[,.(word,prob=prob.total %+na% prob.new)]
+
+            # update lambda
+            lval<-lval*(sum(contcounts$count)/totalcounts)
+            #check
+            lcheck<-1.0-sum(wordprobs$prob)
+            cat('j = ',j,', lambda = ',lval,', lcheck = ',lcheck,'\n')
+
+        }
+        print(head(wordprobs[order(-prob)]))
+
+        # do lowest order/unigrams
+        unicounts<-dflist[[1]]
+        unicounts<-unicounts[,.(word=w1,prob=lval/nrow(unicounts))]
+        wordprobs<-merge(wordprobs,unicounts,by.x='word',by.y='word',all=TRUE,suffixes=c('.total','.new'))
+        wordprobs<-wordprobs[,.(word,prob=prob.total %+na% prob.new)]
+
+
+        print(head(wordprobs[order(-prob)]))
+
+
 
         # now do continuation counts for lower orders
         
@@ -485,30 +537,6 @@ dflist<-lapply(1:nmax,loaddf)
 # write.csv(cleaned[order(-counts.total)],file=outname,row.names=FALSE)
 
 DoPredictions()
-
-# todo: 
-# clean our ngrams
-# convert things to probability
-# define perplexity and estimate coefficients
-# do quiz doPredictions
-
-
-# Model:
-# kneser kney smoothing
-# probability is discounted ngram counts + lambda Pcontinuation, where Pcontinuation is the number of bigrams that are completed by word under consideration.
-# knesser kney shouldn't be too hard. We'll need to compute perplexity and come up with some coefficients.
-
-# predict
-
-# stupid backoff (to start)
-# look at 4 grams, look at the most probable 4 gram that matches the previous 3 (w-3,w-2,w-1) words
-
-# look at the most probable 3 grams that match w-1, w-2. If these would predict a word not suggested by 4 grams, weight these by some alpha (alpha <1)
-# look at the most probable 2 grams that match w-1. If these would predict something not covered by the 4 or 3 grams, then consider this with weight alpha ^2 (or something)
-# otherwise consider the most probable words, if they haven't already been suggested.
-
-
-
 
 
 
