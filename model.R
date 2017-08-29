@@ -297,38 +297,11 @@ dflist<-lapply(1:nmax,loaddf)
 # head(dflist[[1]])
 # setkey(dflist[[1]],w1,w2,w3,w4)
 
-
-
-    # fname<-sprintf('./data/cleaned_counts_n%i.csv',5)
-    # n5df<-data.table(read.csv(fname,stringsAsFactors=FALSE))
-    # setkey(n5df,w1,w2,w3,w4,w5) # want to predict based on first 4
-
-    # fname<-sprintf('./data/cleaned_counts_n%i.csv',4)
-    # n4df<-data.table(read.csv(fname,stringsAsFactors=FALSE))
-    # setkey(n4df,w2,w3,w4,w1) # want to know when (w2,w3,w4) completes something
-
-    # fname<-sprintf('./data/cleaned_counts_n%i.csv',3)
-    # n3df<-data.table(read.csv(fname,stringsAsFactors=FALSE))
-    # setkey(n3df,w2,w3,w1) # want to know when (w3,w4) completes something
-
-    # fname<-sprintf('./data/cleaned_counts_n%i.csv',2)
-    # n2df<-data.table(read.csv(fname,stringsAsFactors=FALSE))
-    # setkey(n2df,w2,w1) # want to know when (w2) completes something
-
-    # fname<-sprintf('./data/cleaned_counts_n%i.csv',1)
-    # n1df<-data.table(read.csv(fname,stringsAsFactors=FALSE))
-    # setkey(n1df,w1) # want to know when (w2) completes something
-    # cat('data loaded')
-
-
     Dval<-0.4 # discount, could train this maybe
-
 
     predictCleaned<-function(instr)
     {
-
         # trim history, only need last (n-1) words
-
         if (length(instr) > (nmax-1))
         {
             instr<-instr[-seq_len(length(instr) -(nmax-1))]
@@ -383,7 +356,7 @@ dflist<-lapply(1:nmax,loaddf)
         # print(head(highcounts))
         wordprobs<-highcounts[,.(word,prob = (count-Dval)/sum(count))]
         wordprobs[prob <0,prob:=0]
-        print(head(wordprobs))
+        # print(head(wordprobs))
         lval<-1.0 - sum(wordprobs$prob) # probability mass left for lower orders
 
         # recursively loop over lower orders
@@ -419,7 +392,7 @@ dflist<-lapply(1:nmax,loaddf)
             cat('j = ',j,', lambda = ',lval,', lcheck = ',lcheck,'\n')
 
         }
-        print(head(wordprobs[order(-prob)]))
+        # print(head(wordprobs[order(-prob)]))
 
         # do lowest order/unigrams
         unicounts<-dflist[[1]]
@@ -429,15 +402,6 @@ dflist<-lapply(1:nmax,loaddf)
 
 
         print(head(wordprobs[order(-prob)]))
-
-
-
-        # now do continuation counts for lower orders
-        
-        # highcounts is good. Do the kneser ney smoothing
-
-
-
 
     }
 
@@ -470,7 +434,18 @@ dflist<-lapply(1:nmax,loaddf)
 
     }
 
-    predict(c('you never know until you ','my dog has a '))
+    predict(c(
+        "When you breathe, I want to be the air for you. I'll be there for you, I'd live and I'd",
+        "Guy at my table's wife got up to go to the bathroom and I asked about dessert and he started telling me about his",
+        "I'd give anything to see arctic monkeys this",
+        "Talking to your mom has the same effect as a hug and helps reduce your",
+        "When you were in Holland you were like 1 inch away from me but you hadn't time to take a",
+        "I'd just like all of these questions answered, a presentation of evidence, and a jury to settle the",
+        "I can't deal with unsymetrical things. I can't even hold an uneven number of bags of groceries in each",
+        "Every inch of you is perfect from the bottom to the",
+        "I’m thankful my childhood was filled with imagination and bruises from playing",
+        "I like how the same people are in almost all of Adam Sandler's"
+        ))
 
 
 
