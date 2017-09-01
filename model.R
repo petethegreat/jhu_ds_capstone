@@ -373,9 +373,11 @@ dflist<-lapply(1:nmax,loaddf)
         wordprobs[prob <0,prob:=0]
         # print(head(wordprobs))
         lval<-1.0 - sum(wordprobs$prob) # probability mass left for lower orders
+        lcheck<-Dval*nrow(highcounts)/sum(highcounts$count) # probability mass left for lower orders
+        cat('checking stuff, lval = ',lval,', lcheck = ',lcheck,'\n')
 
-        # recursively loop over lower orders
-        for( j in (thisnmax-1):2)
+        # use continuations for this order and lower orders
+        for( j in (thisnmax):2)
         {
             # get the continuationcounts for this order
             thedata<-dflist[[j]]
@@ -385,7 +387,8 @@ dflist<-lapply(1:nmax,loaddf)
             theexpr<-paste(c('setkey(thedata,',thecol,')',collapse='',sep=''))
             eval(parse(text=theexpr))
 
-            # get continuation counts
+            # get continuation counts. group things by wj, count is the number of entries in the group
+            # i.e., count is the continuation count, the number of unique ngrams that are completed by the word wj
             theexpr<-paste(c('contcounts<-thedata[,.(word=',thecol,',count=.N),by=',thecol,']'),sep='',collapse='')
             eval(parse(text=theexpr))
             # apply discounts 
@@ -394,17 +397,18 @@ dflist<-lapply(1:nmax,loaddf)
             totalcounts<-nrow(thedata) # number of unique n-grams before discounts applied
 
             # convert counts to prob, multiply by lambda
-            contcounts[,prob:=count/totalcounts*lval]
+            contcounts[,prob:=(lval*count)/totalcounts]
             
             # merge these probabilities with those from higher orders
             wordprobs<-merge(wordprobs,contcounts[,.(word,prob)],by.x='word',by.y='word',all=TRUE,suffixes=c('.total','.new'))
             wordprobs<-wordprobs[,.(word,prob=prob.total %+na% prob.new)]
 
             # update lambda
-            lval<-lval*(sum(contcounts$count)/totalcounts)
+            # cat('check2: continuations = ',sum(contcounts$count),', unique ngrams = ',nrow(thedata),', lambda = ',Dval*nrow(thedata)/sum(thedata$counts.total),'\n')
+            lval<-lval*(1.0 - (sum(contcounts$count)/totalcounts))
             #check
-            lcheck<-1.0-sum(wordprobs$prob)
-            cat('j = ',j,', lambda = ',lval,', lcheck = ',lcheck,'\n')
+            lcheck<- 1.0-sum(wordprobs[prob >= 0.0,.(prob)])
+            # cat('j = ',j,', lambda = ',lval,', lcheck = ',lcheck,'\n')
 
         }
         # print(head(wordprobs[order(-prob)]))
@@ -412,7 +416,7 @@ dflist<-lapply(1:nmax,loaddf)
         # do lowest order/unigrams
         # each word receives equal weighting, lamda/V (V = vocab size, or nrows in )
         unicounts<-dflist[[1]]
-        unicounts<-unicounts[word !='UNKNOWN']
+        unicounts<-unicounts[w1 !='UNKNOWN']
         unicounts<-unicounts[,.(word=w1,prob=lval/nrow(unicounts))]
         wordprobs<-merge(wordprobs,unicounts,by.x='word',by.y='word',all=TRUE,suffixes=c('.total','.new'))
         wordprobs<-wordprobs[,.(word,prob=prob.total %+na% prob.new)]
@@ -465,7 +469,9 @@ dflist<-lapply(1:nmax,loaddf)
         # "I can't deal with unsymetrical things. I can't even hold an uneven number of bags of groceries in each",
         # "Every inch of you is perfect from the bottom to the",
         # "I’m thankful my childhood was filled with imagination and bruises from playing",
-        "I like how the same people are in almost all of Adam Sandler's"
+        "want to go to",
+        "would you like to"
+
         ))
 
 
