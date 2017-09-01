@@ -29,7 +29,10 @@ loaddf<-function(i)
 shinyServer(
   function(input,output,session)
   {
+    # this isn't working, maybe click a load data, or select nmax from a list
+    # add a progress bar
     output$predictedText<-renderPrint('loading stuff, please wait')
+    output$statusText<-renderPrint('loading data, please wait')
 
     #################################################
     ################ Global Variables ###############
@@ -195,6 +198,7 @@ shinyServer(
     ################################################################
     ################################################################
     # end of function definition, this is server behaviour
+    
 
     
     if (is.null(dflist))
@@ -203,7 +207,7 @@ shinyServer(
       cat('loading data\n')
       dflist<-lapply(1:nmax,loaddf)
 
-      output$predictedText<-renderPrint('data loaded, generating prediction')
+      output$statusText<-renderPrint('data loaded, generating prediction')
     }
 
     # if input text changes, generate new predictions

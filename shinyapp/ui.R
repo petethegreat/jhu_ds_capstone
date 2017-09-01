@@ -29,8 +29,11 @@ shinyUI(
         # tags$style(type = "text/css", "#map {height: calc(100vh - 80px) !important;}"),
         # leafletOutput("map")
         h3('text output'),
+        p('status:'),
+        textOutput('statusText'),
         p('predicted output:'),
         br(),
+
         textOutput("predictedText"),
         br(),
         DT::dataTableOutput("predictedDT")
