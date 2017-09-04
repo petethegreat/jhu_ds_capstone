@@ -6,22 +6,30 @@ library(reshape2)
 library(data.table)
 library(dtplyr)
 library(DT)
+library(ggplot2)
 
-
+# load data
 
 `%+na%` <- function(x,y) {ifelse( is.na(x), y, ifelse( is.na(y), x, x+y) )}
 # sum data table columns, ignoring NA
 # https://stackoverflow.com/questions/13106645/using-in-data-table-to-sum-the-values-of-two-columns-in-r-ignoring-nas
 
 # function to load ngram data
+nmax<-5 # use ngrams of up to 5th order
+Dval<-0.4 # discount
+readrows<-1000
 
 loaddf<-function(i)
 {
     fname<-sprintf('./data/cleaned_counts_n%i.csv',i)
     cat('loading ',fname,'\n')
-    return(data.table(read.csv(fname,stringsAsFactors=FALSE)))
+    return(data.table(read.csv(fname,stringsAsFactors=FALSE,nrows=readrows)))
 
 }
+cat('loading data\n')
+dflist<-lapply(1:nmax,loaddf)
+
+
 
 
 
@@ -37,9 +45,7 @@ shinyServer(
     #################################################
     ################ Global Variables ###############
     #################################################
-    dflist<-NULL
-    Dval<-0.4 # discount
-    nmax<-5 # use ngrams of up to 5th order
+    # dflist<-NULL
 
     ####################################################
     ############### Function Definition ################
@@ -198,17 +204,31 @@ shinyServer(
     ################################################################
     ################################################################
     # end of function definition, this is server behaviour
-    
-
-    
-    if (is.null(dflist))
+    getWordPlot<-function(predictions)
     {
-      output$predictedText<-renderPrint('loading data - please wait')
-      cat('loading data\n')
-      dflist<-lapply(1:nmax,loaddf)
 
-      output$statusText<-renderPrint('data loaded, generating prediction')
+      # g<- ggplot(data=predictions,aes(x=word,stat=prob))
+      g<- ggplot(data=predictions,aes(x=word,weight=prob*100.0,fill=prob)) + 
+        scale_x_discrete(limits=predictions$word[order(predictions$prob,decreasing=FALSE)]) + 
+        geom_bar() + 
+        scale_fill_gradientn(colors=c('purple','red')) +
+        coord_flip() + 
+        labs(y='probability',x='predicted word',title='Top 10 Word Predictions') + 
+        guides(fill=FALSE) + 
+        annotate('text',x=predictions$word,y=predictions$prob,label=sprintf('%6.3f%%',predictions$prob*100.0),hjust=0)
+        return(g)
+
     }
+
+    
+    # if (is.null(dflist))
+    # {
+    #   output$predictedText<-renderPrint('loading data - please wait')
+    #   cat('loading data\n')
+    #   dflist<-lapply(1:nmax,loaddf)
+
+    #   output$statusText<-renderPrint('data loaded, generating prediction')
+    # }
 
     # if input text changes, generate new predictions
     observeEvent(input$inputText,
@@ -216,9 +236,11 @@ shinyServer(
         # filter data based on slider
         predictions<-predict(input$inputText)
 
-        output$predictedDT<-renderDataTable({predictions})
+        # output$predictedDT<-renderDataTable({predictions})
 
-        output$predictedText<-renderPrint(paste('prediction: ',predictions[1,.(word)],collapse='',sep=''))
+        output$predictedText<-renderText({HTML(paste0('<b>Next Word Prediction</b>: ',predictions[1,.(word)]))})
+
+        output$wordPlot<-renderPlot(getWordPlot(predictions))
 
 
 

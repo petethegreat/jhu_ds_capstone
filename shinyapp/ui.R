@@ -4,11 +4,11 @@ library(DT)
 
 shinyUI(
   fluidPage(
-    titlePanel('TextPred'),
+    titlePanel('TextPred - Next Word Prediction'),
     sidebarLayout(
       sidebarPanel(
         h3('TextPred - Text Prediction'),
-        textInput('inputText',label='input text',value='input text goes here')
+        textInput('inputText',label='input text',value='Would you like to go to the')
         # tabsetPanel
         # (
         #   tabPanel("Controls",
@@ -28,15 +28,14 @@ shinyUI(
       (
         # tags$style(type = "text/css", "#map {height: calc(100vh - 80px) !important;}"),
         # leafletOutput("map")
-        h3('text output'),
-        p('status:'),
-        textOutput('statusText'),
-        p('predicted output:'),
+        # h3('text output'),
+        # p('predicted output:'),
+        # br(),
+        # p('Predicted Next Word: '),
+        htmlOutput("predictedText"),
         br(),
-
-        textOutput("predictedText"),
-        br(),
-        DT::dataTableOutput("predictedDT")
+        plotOutput('wordPlot')
+        # DT::dataTableOutput("predictedDT")
 
 
 
