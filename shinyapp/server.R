@@ -7,6 +7,7 @@ library(data.table)
 library(dtplyr)
 library(DT)
 library(ggplot2)
+library(shinyjs)
 
 # load data
 
@@ -249,6 +250,9 @@ shinyServer(
       }
     ) # end observeEvent
 
-    
+    hide(id = "loadScreen", anim = TRUE, animType = "fade")    
+    show("content")
+
+
   } # end ShinyServer block
 ) # end ShinyServer

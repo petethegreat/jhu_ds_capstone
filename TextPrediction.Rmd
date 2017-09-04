@@ -1,0 +1,42 @@
+---
+title: "JHU Capstone Project - text prediction"
+output:
+  html_document:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+  pdf_document:
+    toc: true
+---
+
+# Introduction
+I've added some notes on my work here. 
+
+# N-Gram creation
+N-Grams are created using the tau package, while the tm package was used to create and transform the corpus. Processing the corpus was very resource intensive given my available computing power (I ran R through a linux VM with up to 5 GB of memory). I initially tried using the tm package to create ngrams, using tokenizers created through RWeka for bigrams and higher. I tried a few approaches here, but none performed very well. 
+
+The code I ended up using for ngram creation is in n2.R
+
+
+  * split the corpus into train, validate, and test samples (80%/10%/10%), one each for twitter, news and blogs
+  * split each training set into 40 temporary input files
+  * process each temporary input file. The input is cleaned (chracters are converted to utf-8, lower case, with  numbers, punctuation and extra white space removed) and then ngrams are created using the '''textcnt''' function from tau. The ngram counts are then written to csv (one for each temp input file)
+  * Each ngram csv is read into a data table, then merged with a total count (using an outer join). The total is then written to csv.
+
+  In the end, I split the training set into 40 temporary files, and used 30 of these (so 75% of 80% of the corpus was used to train the model.) All observed words were kept for 1-grams, bigrams and trigrams were required to have a total count of at least 2 (or were discarded), while 4 and 5 grams were kept only if the total count was 5 or higher. File sizes for the csvs containing the file ngram data are given below
+
+
+|file| size (MB) |
+|--------|-----|
+|cleaned_counts_n1.csv| 8.8 |
+|cleaned_counts_n2.csv| 52 |
+|cleaned_counts_n3.csv| 106 |
+|cleaned_counts_n4.csv| 12 |
+|cleaned_counts_n5.csv| 4.1 |
+
+## Model
+
+An interpolated Neser-Kney model is used for prediction
+
+
+
+
+ 
