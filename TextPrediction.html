@@ -120,6 +120,14 @@ $(document).ready(function () {
 </div>
 
 
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { 
+      equationNumbers: { 
+            autoNumber: "all"      } 
+  }
+});
+</script>
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
 <p>I’ve added some notes on my work here.</p>
@@ -168,9 +176,21 @@ $(document).ready(function () {
 <div id="model" class="section level2">
 <h2>Model</h2>
 <p>An interpolated Kneser-Ney model is used for prediction. The next-word probabilities are computed based on n-gram frequencies, such that</p>
-<p><span class="math display">\[ P(w_i|w_{i-n+1}^{i-1}) = \frac{C(w_{i-n+1}^{i-1} \, w_i) -d}{C(w_{i-n+1}^{i-1})} \]</span></p>
-<p>Where <span class="math inline">\(P(w_i|w_{i-n+1}^{i-1})\)</span> is the probability of the next word, <span class="math inline">\(w_i\)</span>, preceeding the <span class="math inline">\(n\)</span>-word history <span class="math inline">\(w_{i-n+1}^{i-1}\)</span>, <span class="math inline">\(C(w_{i-n+1}^{i-1} \, w_i)\)</span> is the count of the <span class="math inline">\(n+1\)</span> gram <span class="math inline">\(w_{i-n+1}^{i-1} \, w_i\)</span>, <span class="math inline">\(C(w_{i-n+1}^{i-1})\)</span> is the count of the history, and <span class="math inline">\(d\)</span> is a discount value.</p>
+\begin{equation}
+P(w_i|w_{i-n+1}^{i-1}) = \frac{C(w_{i-n+1}^{i-1} \, w_i) -d}{C(w_{i-n+1}^{i-1})}
+\end{equation}
+<p>Where <span class="math inline">\(P(w_i|w_{i-n+1}^{i-1})\)</span> is the probability of the next word, <span class="math inline">\(w_i\)</span>, preceeding the <span class="math inline">\(n\)</span>-word history <span class="math inline">\(w_{i-n+1}^{i-1}\)</span>, <span class="math inline">\(C(w_{i-n+1}^{i-1} \, w_i)\)</span> is the count of the <span class="math inline">\(n+1\)</span> gram <span class="math inline">\(w_{i-n+1}^{i-1} \, w_i\)</span>, <span class="math inline">\(C(w_{i-n+1}^{i-1})\)</span> is the count of the history, and <span class="math inline">\(d\)</span> is a discount value. Essentially, the probability of the candidate <span class="math inline">\(w_i\)</span> is the relative number of times that the n-gram formed by the <span class="math inline">\(n\)</span> word history is completed by <span class="math inline">\(w_i\)</span>. The discount reduces these probabilities, such that they will not sum to 1.</p>
+<p>The remaining probability mass is based on continuation. The n-gram probability above gives a good probability estimate based on previously seen contexts, but it could be that the ideal next word will be occuring in a context that was not seen in our training corpus. In this case, we form the probability based on continuation counts, that is, the number of unique n-grams that are completed by the candidate word. If a word occurs in a lot of different contexts it may be a good match for the next word, even if we haven’t observed it in that context before.</p>
+<p>The word probability based on continuation is given by <span class="math display">\[ P(w_i|w_{i-n+1}^{i-1}) = \frac{N_{1+}(\dot w_i) -d}{N_{1+}(\dot\,\dot)} \]</span>, where <span class="math inline">\(N_{1+}(\dot w_i)\)</span> is the number of unique n-grams (with at least one count) that end with <span class="math inline">\(w_i\)</span>, and <span class="math inline">\(N_{1+}(\dot\,\dot)\)</span> is the total number of unique n-grams with at least one count.</p>
+<p>The probability computation is carried out in the predictCleaned function of model.R - - Try searching for the <em>n-1</em> words of the history in the highest order n-grams available (n=5 in this case). If no match is found, try the next highest order (4) - Once the (some amount) of the history has been found,</p>
 <p>The same transformations (lower-case utf8, digits and punctuation removed) that were applied to the training corpus are performed on the input string. The</p>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<ul>
+<li>draft version of “<a href="https://web.stanford.edu/~jurafsky/slp3/4.pdf">Speech and Language Processing</a>”, chapter 4, by Daniel Jurafsky and James Martin, while researching n-grams and NLP.</li>
+<li>Chen, S. and Goodman, J., “An empirical study of smoothing techniques for language modeling”, <em>Computer speech and Language (1999)</em>, <strong>13</strong>.</li>
+</ul>
 </div>
 </div>
 
