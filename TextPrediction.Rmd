@@ -61,13 +61,14 @@ $$ P(w_i|w_{i-n+1}^{i-1}) = \frac{N_{1+}(\cdot w_i) -d}{N_{1+}(\cdot\,\cdot)} $$
 where $N_{1+}(\cdot w_i)$ is the number of unique n-grams (with at least one count) that end with $w_i$, and $N_{1+}(\cdot\,\cdot)$ is the total number of unique n-grams with at least one count. 
 
 The probability computation is carried out in the predictCleaned function of model.R -
-  - Try searching for the _n-1_ words of the history in the highest order n-grams available (n=5 in this case). If no match is found, try the next highest order (4)
-  - Once the (some amount) of the history has been found, compute word probabilities based on discounted n-gram counts (equation 1)
-  - Compute $\lambda$, the unused probability mass resulting from the discounting (this is the sum of all word probabilities subtracted from 1.0)
-  - Probabilities are computed based on continuation counts (equation 2), using ngrams of the order in which the history is found. These probabilities are normalised by $\lambda$.
-  - $\lambda$ is recomputed, based on the discount applied to the continuation counts.
-  - Contributions from lower order ngrams are considered. For each lower order, the probabilities are computed based on continuation counts and are scaled by $\lambda$. $\lambda$ is then updated.
-  - At the lowest order (n=1), each word in the vocabulary (i.e., list of unigrams) is assigned equal probability, $\lambda/V$, where V is the number of unique words observed.
+
+  * Try searching for the _n-1_ words of the history in the highest order n-grams available (n=5 in this case). If no match is found, try the next highest order (4)
+  * Once the (some amount) of the history has been found, compute word probabilities based on discounted n-gram counts (equation 1)
+  * Compute $\lambda$, the unused probability mass resulting from the discounting (this is the sum of all word probabilities subtracted from 1.0)
+  * Probabilities are computed based on continuation counts (equation 2), using ngrams of the order in which the history is found. These probabilities are normalised by $\lambda$.
+  * $\lambda$ is recomputed, based on the discount applied to the continuation counts.
+  * Contributions from lower order ngrams are considered. For each lower order, the probabilities are computed based on continuation counts and are scaled by $\lambda$. $\lambda$ is then updated.
+  * At the lowest order (n=1), each word in the vocabulary (i.e., list of unigrams) is assigned equal probability, $\lambda/V$, where V is the number of unique words observed.
 
 For this model, a discount of 0.4 was used. This could be optimised using the validation partition mentioned earlier, and computing the model perplexity. I feel like I spent too much time processing the corpus, and don't have any left to implement this.
 
