@@ -130,7 +130,7 @@ MathJax.Hub.Config({
 </script>
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<p>I’ve added some notes on my work here.</p>
+<p>I’ve added some notes on my work here. All the code for this project, as well as for the app presentation and these notes can be found in <a href="https://github.com/petethegreat/jhu_ds_capstone">my github repo</a> for this course.</p>
 </div>
 <div id="n-gram-creation" class="section level1">
 <h1>N-Gram creation</h1>
@@ -186,7 +186,7 @@ P(w_i|w_{i-n+1}^{i-1}) = \frac{C(w_{i-n+1}^{i-1} \, w_i) -d}{C(w_{i-n+1}^{i-1})}
 <p>The probability computation is carried out in the predictCleaned function of model.R -</p>
 <ul>
 <li>Try searching for the <em>n-1</em> words of the history in the highest order n-grams available (n=5 in this case). If no match is found, try the next highest order (4)</li>
-<li>Once the (some amount) of the history has been found, compute word probabilities based on discounted n-gram counts (equation 1)</li>
+<li>Once (some amount of) the history has been found, compute word probabilities based on discounted n-gram counts (equation 1)</li>
 <li>Compute <span class="math inline">\(\lambda\)</span>, the unused probability mass resulting from the discounting (this is the sum of all word probabilities subtracted from 1.0)</li>
 <li>Probabilities are computed based on continuation counts (equation 2), using ngrams of the order in which the history is found. These probabilities are normalised by <span class="math inline">\(\lambda\)</span>.</li>
 <li><span class="math inline">\(\lambda\)</span> is recomputed, based on the discount applied to the continuation counts.</li>

@@ -18,7 +18,7 @@ MathJax.Hub.Config({
 </script>
 
 # Introduction
-I've added some notes on my work here. 
+I've added some notes on my work here. All the code for this project, as well as for the app presentation and these notes can be found in [my github repo](https://github.com/petethegreat/jhu_ds_capstone) for this course.
 
 # N-Gram creation
 N-Grams are created using the tau package, while the tm package was used to create and transform the corpus. Processing the corpus was very resource intensive given my available computing power (I ran R through a linux VM with up to 5 GB of memory). I initially tried using the tm package to create ngrams, using tokenizers created through RWeka for bigrams and higher. I tried a few approaches here, but none performed very well. 
@@ -63,7 +63,7 @@ where $N_{1+}(\cdot w_i)$ is the number of unique n-grams (with at least one cou
 The probability computation is carried out in the predictCleaned function of model.R -
 
   * Try searching for the _n-1_ words of the history in the highest order n-grams available (n=5 in this case). If no match is found, try the next highest order (4)
-  * Once the (some amount) of the history has been found, compute word probabilities based on discounted n-gram counts (equation 1)
+  * Once (some amount of) the history has been found, compute word probabilities based on discounted n-gram counts (equation 1)
   * Compute $\lambda$, the unused probability mass resulting from the discounting (this is the sum of all word probabilities subtracted from 1.0)
   * Probabilities are computed based on continuation counts (equation 2), using ngrams of the order in which the history is found. These probabilities are normalised by $\lambda$.
   * $\lambda$ is recomputed, based on the discount applied to the continuation counts.
