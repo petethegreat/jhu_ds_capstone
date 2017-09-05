@@ -42,7 +42,7 @@ The code I ended up using for ngram creation is in n2.R
 |cleaned_counts_n4.csv| 12 |
 |cleaned_counts_n5.csv| 4.1 |
 
-The count $ \geq 5$ requirement on 4 and 5 grams was quite harsh, so these files are relatively small. 100 MB is significant, but should be manageable for a web app. Also note that the data only needs to be read once, when the server is initialised. An Enterprise application would presumably have a server up 24/7, and so the load time would be irrelevant. Shinyapps only spins up a server/app/VM when it is requested (and places limits on the usage per month unless the service is paid for).
+The count $\geq 5$ requirement on 4 and 5 grams was quite harsh, so these files are relatively small. 100 MB is significant, but should be manageable for a web app. Also note that the data only needs to be read once, when the server is initialised. An Enterprise application would presumably have a server up 24/7, and so the load time would be irrelevant. Shinyapps only spins up a server/app/VM when it is requested (and places limits on the usage per month unless the service is paid for).
 
 ## Model
 
