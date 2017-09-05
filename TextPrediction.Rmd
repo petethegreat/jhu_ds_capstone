@@ -37,9 +37,9 @@ The code I ended up using for ngram creation is in n2.R
 
 An interpolated Kneser-Ney model is used for prediction. The next-word probabilities are computed based on n-gram frequencies, such that
 
-$$ P(w_i|w_{i-n+1}^{i-1}) = \frac{C(w_{i-n+1} \, w_i) -d}{C(w_{i-n+1})} $$
+$$ P(w_i|w_{i-n+1}^{i-1}) = \frac{C(w_{i-n+1}^{i-1} \, w_i) -d}{C(w_{i-n+1}^)} $$
 
-
+Where $P(w_i|w_{i-n+1}^{i-1})$ is the probability of the next word, $w_i$, preceeding the $n$-word history $w_{i-n+1}^{i-1}$, $C(w_{i-n+1}^{i-1} \, w_i)$ is the count of the $n+1$ gram formed 
 
 The same transformations (lower-case utf8, digits and punctuation removed) that were applied to the training corpus are performed on the input string. The 
 
