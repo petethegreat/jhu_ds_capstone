@@ -2,6 +2,7 @@
 title: "JHU Capstone Project - text prediction"
 output:
   html_document:
+    theme: "cerulean" 
     mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
   pdf_document:
     toc: true
@@ -34,7 +35,13 @@ The code I ended up using for ngram creation is in n2.R
 
 ## Model
 
-An interpolated Neser-Kney model is used for prediction
+An interpolated Kneser-Ney model is used for prediction. The next-word probabilities are computed based on n-gram frequencies, such that
+
+$$ P(w_i|w_{i-n+1}^{i-1}) = \frac{C(w_{i-n+1} \, w_i) -d}{C(w_{i-n+1})} $$
+
+
+
+The same transformations (lower-case utf8, digits and punctuation removed) that were applied to the training corpus are performed on the input string. The 
 
 
 
