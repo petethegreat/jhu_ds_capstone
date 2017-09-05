@@ -173,7 +173,7 @@ MathJax.Hub.Config({
 </tr>
 </tbody>
 </table>
-<p>The count $ 5$ requirement on 4 and 5 grams was quite harsh, so these files are relatively small. 100 MB is significant, but should be manageable for a web app. Also note that the data only needs to be read once, when the server is initialised. An Enterprise application would presumably have a server up 24/7, and so the load time would be irrelevant. Shinyapps only spins up a server/app/VM when it is requested (and places limits on the usage per month unless the service is paid for).</p>
+<p>The count <span class="math inline">\(\geq 5\)</span> requirement on 4 and 5 grams was quite harsh, so these files are relatively small. 100 MB is significant, but should be manageable for a web app. Also note that the data only needs to be read once, when the server is initialised. An Enterprise application would presumably have a server up 24/7, and so the load time would be irrelevant. Shinyapps only spins up a server/app/VM when it is requested (and places limits on the usage per month unless the service is paid for).</p>
 <div id="model" class="section level2">
 <h2>Model</h2>
 <p>An interpolated Kneser-Ney model is used for prediction. The next-word probabilities are computed based on n-gram frequencies, such that</p>
