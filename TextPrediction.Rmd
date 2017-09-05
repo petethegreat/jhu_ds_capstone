@@ -55,8 +55,8 @@ Where $P(w_i|w_{i-n+1}^{i-1})$ is the probability of the next word, $w_i$, prece
 The remaining probability mass is based on continuation. The n-gram probability above gives a good probability estimate based on previously seen contexts, but it could be that the ideal next word will be occuring in a context that was not seen in our training corpus. In this case, we form the probability based on continuation counts, that is, the number of unique n-grams that are completed by the candidate word. If a word occurs in a lot of different contexts it may be a good match for the next word, even if we haven't observed it in that context before.
 
 The word probability based on continuation is given by
-$$ P(w_i|w_{i-n+1}^{i-1}) = \frac{N_{1+}(\dot w_i) -d}{N_{1+}(\dot\,\dot)} $$,
-where $N_{1+}(\dot w_i)$ is the number of unique n-grams (with at least one count) that end with $w_i$, and $N_{1+}(\dot\,\dot)$ is the total number of unique n-grams with at least one count. 
+$$ P(w_i|w_{i-n+1}^{i-1}) = \frac{N_{1+}(\cdot w_i) -d}{N_{1+}(\cdot\,\cdot)} $$,
+where $N_{1+}(\cdot w_i)$ is the number of unique n-grams (with at least one count) that end with $w_i$, and $N_{1+}(\cdot\,\cdot)$ is the total number of unique n-grams with at least one count. 
 
 The probability computation is carried out in the predictCleaned function of model.R -
   - Try searching for the _n-1_ words of the history in the highest order n-grams available (n=5 in this case). If no match is found, try the next highest order (4)
