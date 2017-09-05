@@ -168,7 +168,8 @@ $(document).ready(function () {
 <div id="model" class="section level2">
 <h2>Model</h2>
 <p>An interpolated Kneser-Ney model is used for prediction. The next-word probabilities are computed based on n-gram frequencies, such that</p>
-<p><span class="math display">\[ P(w_i|w_{i-n+1}^{i-1}) = \frac{C(w_{i-n+1} \, w_i) -d}{C(w_{i-n+1})} \]</span></p>
+<p><span class="math display">\[ P(w_i|w_{i-n+1}^{i-1}) = \frac{C(w_{i-n+1}^{i-1} \, w_i) -d}{C(w_{i-n+1}^{i-1})} \]</span></p>
+<p>Where <span class="math inline">\(P(w_i|w_{i-n+1}^{i-1})\)</span> is the probability of the next word, <span class="math inline">\(w_i\)</span>, preceeding the <span class="math inline">\(n\)</span>-word history <span class="math inline">\(w_{i-n+1}^{i-1}\)</span>, <span class="math inline">\(C(w_{i-n+1}^{i-1} \, w_i)\)</span> is the count of the <span class="math inline">\(n+1\)</span> gram <span class="math inline">\(w_{i-n+1}^{i-1} \, w_i\)</span>, <span class="math inline">\(C(w_{i-n+1}^{i-1})\)</span> is the count of the history, and <span class="math inline">\(d\)</span> is a discount value.</p>
 <p>The same transformations (lower-case utf8, digits and punctuation removed) that were applied to the training corpus are performed on the input string. The</p>
 </div>
 </div>
