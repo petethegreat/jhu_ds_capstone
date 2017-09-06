@@ -18,7 +18,7 @@ library(shinyjs)
 # function to load ngram data
 nmax<-5 # use ngrams of up to 5th order
 Dval<-0.4 # discount
-readrows<-1000
+readrows<--1
 
 loaddf<-function(i)
 {

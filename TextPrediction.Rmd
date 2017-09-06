@@ -8,8 +8,17 @@ output:
     toc: true
 ---
 
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { 
+      equationNumbers: { 
+            autoNumber: "all"      } 
+  }
+});
+</script>
+
 # Introduction
-I've added some notes on my work here. 
+I've added some notes on my work here. All the code for this project, as well as for the app presentation and these notes can be found in [my github repo](https://github.com/petethegreat/jhu_ds_capstone) for this course.
 
 # N-Gram creation
 N-Grams are created using the tau package, while the tm package was used to create and transform the corpus. Processing the corpus was very resource intensive given my available computing power (I ran R through a linux VM with up to 5 GB of memory). I initially tried using the tm package to create ngrams, using tokenizers created through RWeka for bigrams and higher. I tried a few approaches here, but none performed very well. 
@@ -33,15 +42,51 @@ The code I ended up using for ngram creation is in n2.R
 |cleaned_counts_n4.csv| 12 |
 |cleaned_counts_n5.csv| 4.1 |
 
+The count $\geq 5$ requirement on 4 and 5 grams was quite harsh, so these files are relatively small. 100 MB is significant, but should be manageable for a web app. Also note that the data only needs to be read once, when the server is initialised. An Enterprise application would presumably have a server up 24/7, and so the load time would be irrelevant. Shinyapps only spins up a server/app/VM when it is requested (and places limits on the usage per month unless the service is paid for).
+
 ## Model
 
-An interpolated Kneser-Ney model is used for prediction. The next-word probabilities are computed based on n-gram frequencies, such that
+An interpolated Kneser-Ney model is used for prediction. The next-word probabilities are computed based on n-gram frequencies, such that 
 
-$$ P(w_i|w_{i-n+1}^{i-1}) = \frac{C(w_{i-n+1}^{i-1} \, w_i) -d}{C(w_{i-n+1}^)} $$
+\begin{equation}
+P(w_i|w_{i-n+1}^{i-1}) = \frac{C(w_{i-n+1}^{i-1} \, w_i) -d}{C(w_{i-n+1}^{i-1})}
+\end{equation}
 
-Where $P(w_i|w_{i-n+1}^{i-1})$ is the probability of the next word, $w_i$, preceeding the $n$-word history $w_{i-n+1}^{i-1}$, $C(w_{i-n+1}^{i-1} \, w_i)$ is the count of the $n+1$ gram formed 
+Where $P(w_i|w_{i-n+1}^{i-1})$ is the probability of the next word, $w_i$, preceeding the $n$-word history $w_{i-n+1}^{i-1}$, $C(w_{i-n+1}^{i-1} \, w_i)$ is the count of the $n+1$ gram $w_{i-n+1}^{i-1} \, w_i$, $C(w_{i-n+1}^{i-1})$ is the count of the history, and $d$ is a discount value. Essentially, the probability of the candidate $w_i$ is the relative number of times that the n-gram formed by the $n$ word history is completed by $w_i$. The discount reduces these probabilities, such that they will not sum to 1.
 
-The same transformations (lower-case utf8, digits and punctuation removed) that were applied to the training corpus are performed on the input string. The 
+The remaining probability mass is based on continuation. The n-gram probability above gives a good probability estimate based on previously seen contexts, but it could be that the ideal next word will be occuring in a context that was not seen in our training corpus. In this case, we form the probability based on continuation counts, that is, the number of unique n-grams that are completed by the candidate word. If a word occurs in a lot of different contexts it may be a good match for the next word, even if we haven't observed it in that context before.
+
+The word probability based on continuation is given by
+$$ P(w_i|w_{i-n+1}^{i-1}) = \frac{N_{1+}(\cdot w_i) -d}{N_{1+}(\cdot\,\cdot)} $$,
+where $N_{1+}(\cdot w_i)$ is the number of unique n-grams (with at least one count) that end with $w_i$, and $N_{1+}(\cdot\,\cdot)$ is the total number of unique n-grams with at least one count. 
+
+The probability computation is carried out in the predictCleaned function of model.R -
+
+  * Try searching for the _n-1_ words of the history in the highest order n-grams available (n=5 in this case). If no match is found, try the next highest order (4)
+  * Once (some amount of) the history has been found, compute word probabilities based on discounted n-gram counts (equation 1)
+  * Compute $\lambda$, the unused probability mass resulting from the discounting (this is the sum of all word probabilities subtracted from 1.0)
+  * Probabilities are computed based on continuation counts (equation 2), using ngrams of the order in which the history is found. These probabilities are normalised by $\lambda$.
+  * $\lambda$ is recomputed, based on the discount applied to the continuation counts.
+  * Contributions from lower order ngrams are considered. For each lower order, the probabilities are computed based on continuation counts and are scaled by $\lambda$. $\lambda$ is then updated.
+  * At the lowest order (n=1), each word in the vocabulary (i.e., list of unigrams) is assigned equal probability, $\lambda/V$, where V is the number of unique words observed.
+
+For this model, a discount of 0.4 was used. This could be optimised using the validation partition mentioned earlier, and computing the model perplexity. I feel like I spent too much time processing the corpus, and don't have any left to implement this.
+
+## Shiny app
+
+The same transformations (lower-case utf8, digits and punctuation removed) that were applied to the training corpus are performed on the input string. The input words are then fed to the model, which computes word probabilities, and returns a data table containing the 10 most likely words and their probabilities. The most likely word is take as the prediction. A bar chart is formed from the probabilities of the 10 most likely words, and this is displayed to the user.
+
+When the server is initialised, the ngram data needs to be loaded. This takes a few seconds on my computer (make take longer on the rstudio shinyapps server). Some javascript (shinyjs package) and CSS are used to display a loading message in the user's browser. Once the data is loaded, the message is hidden and the app may be used. Dean Atalli's [blog](http://deanattali.com/blog/advanced-shiny-tips/) was useful when trying to figure out how to do this.
+
+## References
+
+  * draft version of "[Speech and Language Processing](https://web.stanford.edu/~jurafsky/slp3/4.pdf)", chapter 4, by Daniel Jurafsky and James Martin, while researching n-grams and NLP. 
+  * Chen, S. and Goodman, J., "An empirical study of smoothing techniques for language modeling", _Computer speech and Language (1999)_, __13__.
+  * [Shiny tips & tricks for improving your apps and solving common problems](http://deanattali.com/blog/advanced-shiny-tips/)
+
+
+
+
 
 
 

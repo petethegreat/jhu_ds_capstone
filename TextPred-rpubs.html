@@ -15,6 +15,7 @@
   <style type="text/css">
 @import url('https://fonts.googleapis.com/css?family=News+Cycle:400,700');
 @import url('https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic');
+@import url('https://fonts.googleapis.com/css?family=Montserrat');
 
   </style>    
     
@@ -525,6 +526,13 @@ body {
 }
 
 
+#pete {
+    background-color: #AAAAFF;
+}
+
+h1,h2,h3 {
+    font-family: Montserrat;
+}
 
   </style>
   
@@ -759,7 +767,7 @@ hljs.initHighlightingOnLoad();
 <section data-transition="linear" data-transition-speed="default">
 <h3>Slide 1</h3>
 <div class="slideContent" >
-<p>TextPred - text prediction app</p>
+<p><a href="https://petethegreat.shinyapps.io/textpred/">TextPred</a> - text prediction app</p>
 
 </div>
 
@@ -788,8 +796,11 @@ bar chart displays most likely words, and their predicted probabilities
 <section data-transition="linear" data-transition-speed="default">
 <h3>Slide 4</h3>
 <div class="slideContent" >
-<p>based on interpolated Kneser-Ney model
-code in github</p>
+<ul>
+<li>Prediction is based off an interpolated Kneser-Ney model using N-grams of up to 5th order</li>
+<li>
+code in github</li>
+</ul>
 
 </div>
 

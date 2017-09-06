@@ -45,7 +45,8 @@ shinyUI(
                         textInput('inputText',label='Input Text',value='Would you like to go to the')
                         ),
                     tabPanel("Help",
-                        p('help text goes here')
+                        p('Enter text in the input box (under the input tab) on the left. The next word prediction will appear in the panel to the right, with a plot showing estimated word probabilities for the 10 most likely words'),
+                        p('Further information can be found',a('here',href='https://petethegreat.github.io/jhu_ds_capstone/TextPrediction.html'))
                         )
                 )
 
