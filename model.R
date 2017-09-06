@@ -3,7 +3,7 @@ library(reshape2)
 
 library(data.table)
 library(dtplyr)
-
+library(ggplot2)
 
 `%+na%` <- function(x,y) {ifelse( is.na(x), y, ifelse( is.na(y), x, x+y) )}
 # sum data table columns, ignoring NA
@@ -255,9 +255,17 @@ oldDoPredictions<-function()
 
 }
 
-DoPredictions<-function()
+cat('loading data\n')
+nmax<-5 # have only up to 5 grams
+loaddf<-function(i)
 {
+    fname<-sprintf('./data/cleaned_counts_n%i.csv',i)
+    cat('loading ',fname,'\n')
+    return(data.table(read.csv(fname,stringsAsFactors=FALSE)))
 
+}
+
+dflist<-lapply(1:nmax,loaddf)
 
 # Will use interpolated kneser ney smoothing
 
@@ -278,17 +286,7 @@ DoPredictions<-function()
 
 # load all our data
 
-cat('loading data\n')
-nmax<-5 # have only up to 5 grams
-loaddf<-function(i)
-{
-    fname<-sprintf('./data/cleaned_counts_n%i.csv',i)
-    cat('loading ',fname,'\n')
-    return(data.table(read.csv(fname,stringsAsFactors=FALSE)))
 
-}
-
-dflist<-lapply(1:nmax,loaddf)
 # setkey(dflist[[1]],cols=c('w1'))
 # setkey(dflist[[2]],cols=c('w1','w2'))
 # setkey(dflist[[3]],cols=c('w1','w2','w3'))
@@ -306,7 +304,7 @@ dflist<-lapply(1:nmax,loaddf)
         {
             instr<-instr[-seq_len(length(instr) -(nmax-1))]
         }
-        cat(instr,'\n')
+        # cat(instr,'\n')
 
 
         thisnmax<-min(length(instr),nmax-1)+1
@@ -319,7 +317,7 @@ dflist<-lapply(1:nmax,loaddf)
 
             thestr<-instr[-seq_len(length(instr)-thisnmax +1) ]
             # cat(thestr,'\n')
-            cat('trying nmax = ',thisnmax,'\n')
+            # cat('trying nmax = ',thisnmax,'\n')
             # want to look up the nth word using the first n-1 words
             # if theres no match for the first n-1 words, then back off to n-1 grams and try looking up the first n-2 words
             # if our 5 grams are useless, then treat our 4 grams as highest order
@@ -374,7 +372,7 @@ dflist<-lapply(1:nmax,loaddf)
         # print(head(wordprobs))
         lval<-1.0 - sum(wordprobs$prob) # probability mass left for lower orders
         lcheck<-Dval*nrow(highcounts)/sum(highcounts$count) # probability mass left for lower orders
-        cat('checking stuff, lval = ',lval,', lcheck = ',lcheck,'\n')
+        # cat('checking stuff, lval = ',lval,', lcheck = ',lcheck,'\n')
 
         # use continuations for this order and lower orders
         for( j in (thisnmax):2)
@@ -458,6 +456,50 @@ dflist<-lapply(1:nmax,loaddf)
 
 
     }
+    getWordPlot<-function(predictions)
+    {
+
+      # g<- ggplot(data=predictions,aes(x=word,stat=prob))
+      g<- ggplot(data=predictions,aes(x=word,weight=prob*100.0,fill=prob)) + 
+        scale_x_discrete(limits=predictions$word[order(predictions$prob,decreasing=FALSE)]) + 
+        geom_bar() + 
+        scale_fill_gradientn(colors=c('purple','red')) +
+        coord_flip() + 
+        labs(y='probability',x='predicted word',title='Top 10 Word Predictions') + 
+        guides(fill=FALSE) + 
+        annotate('text',x=predictions$word,y=predictions$prob,label=sprintf('%6.3f%%',predictions$prob*100.0),hjust=0)
+        return(g)
+
+    }
+    predictPlot<-function(inputstr)
+    {
+        # prepare input
+        thestring<-iconv(inputstr, "latin1", "ASCII", sub="BADCHAR")
+        thestring<-gsub('[^ ]*(BADCHAR)+[^ ]','',thestring)
+        thestring<-tolower(thestring)
+        thestring<-gsub('\\s+',' ',thestring)
+        thestring<-gsub('^ ','',thestring)
+        thestring<-gsub(' $','',thestring)
+        thestring<-gsub('[^a-zA-Z ]','',thestring)
+
+        # print(inputstr)
+        # print(thestring)
+
+
+        words<-strsplit(thestring,' ')
+        results<-predictCleaned(words[[1]])
+        g<-getWordPlot(results)
+        return(g)
+
+        # this returns a list of character vectors, each vector containing single words
+
+
+
+
+
+    }
+
+
 
     predict(c(
         # "When you breathe, I want to be the air for you. I'll be there for you, I'd live and I'd",
@@ -484,7 +526,7 @@ dflist<-lapply(1:nmax,loaddf)
 
 
 
-}
+
  
 
 
@@ -538,7 +580,7 @@ dflist<-lapply(1:nmax,loaddf)
 # # want to discount and convert to probability before writing
 # write.csv(cleaned[order(-counts.total)],file=outname,row.names=FALSE)
 
-DoPredictions()
+# DoPredictions()
 
 
 

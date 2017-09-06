@@ -22,12 +22,7 @@ Slide 3
 
 loading screen displays while app initialises
 bar chart displays most likely words, and their predicted probabilities
-```{r plotslide,cache=TRUE,results='hide',echo=FALSE}
-source('model.R')
-g<-predictPlot('do you want to go to the')
-print(g)
-
-```
+![plot of chunk plotslide](TextPred-figure/plotslide-1.png)
 
 Slide 4
 ==========================================================
