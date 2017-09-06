@@ -3,14 +3,17 @@ TextPred
 author: Peter Thompson
 date: September 5, 2017
 autosize: true
+font-import: https://fonts.googleapis.com/css?family=Montserrat
 
 Slide 1
 ========================================================
 
-TextPred - text prediction app
+[TextPred](https://petethegreat.shinyapps.io/textpred/) - text prediction app
+
 
 Slide 2
 ========================================================
+class: pete
 
 Text pred - shiny app for next word prediction
 based of data from twitter, news and blog posts
@@ -19,16 +22,16 @@ hosted on shinyapps
 
 Slide 3
 ========================================================
-
+class: pete
 loading screen displays while app initialises
 bar chart displays most likely words, and their predicted probabilities
 ![plot of chunk plotslide](TextPred-figure/plotslide-1.png)
 
-
 Slide 4
 ==========================================================
-
-based on interpolated Kneser-Ney model
+class: pete
+  * Prediction is based off an interpolated Kneser-Ney model using N-grams of up to 5th order
+  * 
 code in github
 
 
