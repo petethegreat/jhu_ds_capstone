@@ -1,0 +1,15 @@
+
+.pete .reveal .state-background
+{
+    background: #CCCCFF;
+}
+
+ .section .reveal .state-background {
+    background: #8800FF;
+}
+.pete .reveal h1,
+.pete .reveal h2,
+.pete .reveal h3{
+    font-family: Montserrat;
+    color: #8800FF;
+}
