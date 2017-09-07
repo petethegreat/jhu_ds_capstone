@@ -19,6 +19,8 @@ MathJax.Hub.Config({
 
 # Introduction
 I've added some notes on my work here. All the code for this project, as well as for the app presentation and these notes can be found in [my github repo](https://github.com/petethegreat/jhu_ds_capstone) for this course.
+The app itself is hosted on shiny.io, and can be found [here](https://petethegreat.shinyapps.io/textpred/)
+
 
 # N-Gram creation
 N-Grams are created using the tau package, while the tm package was used to create and transform the corpus. Processing the corpus was very resource intensive given my available computing power (I ran R through a linux VM with up to 5 GB of memory). I initially tried using the tm package to create ngrams, using tokenizers created through RWeka for bigrams and higher. I tried a few approaches here, but none performed very well. 
