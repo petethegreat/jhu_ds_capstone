@@ -19,7 +19,7 @@ MathJax.Hub.Config({
 
 # Introduction
 I've added some notes on my work here. All the code for this project, as well as for the app presentation and these notes can be found in [my github repo](https://github.com/petethegreat/jhu_ds_capstone) for this course.
-The app itself is hosted on shiny.io, and can be found [here](https://petethegreat.shinyapps.io/textpred/)
+The app itself is hosted on shiny.io, and can be found [here](https://petethegreat.shinyapps.io/textpred/). Rpresenter presentation can be found [here](https://petethegreat.github.io/jhu_ds_capstone/TextPred.html)
 
 
 # N-Gram creation
