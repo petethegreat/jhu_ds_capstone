@@ -1,0 +1,27 @@
+---
+title: "Stats problems"
+output:
+  html_document:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+  pdf_document:
+    toc: true
+---
+
+# Intro
+Was looking at a job posting that had some stats questions in the application form. Thought I would show my work here, rather than trying to cram it into the answer field.
+
+# Bruises and Burns
+
+Of observed injuries, bruises occur with a frequency of 0.1 and burns occur with a frequency of 0.01. These are the __Prior__ probabilities:
+    * $P(bu) = 0.01$
+    * $P(br) = 0.1$
+
+We want the probability that an injury is a burn ($P(bu|s)$) or a bruise ($P(br|s)$) given that some swelling has been observed. These are given by Baye's rule:
+$$
+\begin{aligned}
+P(bu|s) &=& \frac{P(s|bu)\,P(bu)}{P(s)} \\
+P(br|s) &=& \frac{P(s|bu)\,P(bu)}{P(s)} \\
+\end{aligned}
+$$
+
+
