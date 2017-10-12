@@ -209,6 +209,54 @@ P(2r,3g) &amp; = &amp; \binom{5}{2} \, \frac{30}{2002} \\
 \end{aligned}
 \]</span></p>
 <p>There is a 15% chance of drawing 2 red gumballs and 3 green.</p>
+<p>Sanity check: Do the probabilities for 1-5 red balls sum to 1?</p>
+<pre class="python"><code>
+bagRed = 10
+bagGreen = 5
+draw = 5
+
+from scipy.misc import comb
+
+def drawRedBalls(nred):
+    '''compute the probability of drawing 5 balls, with nred red, in a specific red-green order
+    Will multiply individual drawing probabilities rather than using combinatorics and factorials
+    This avoids potential overflows from multiplying large integers, and should be easier to follow. 
+    '''
+    bag = (bagRed + bagGreen)*1.0
+    prob = 1.0
+
+    # draw red first
+    for ired in range(0,nred):
+        prob *= (bagRed - ired)/bag
+        bag -= 1
+
+    # draw green
+    for igreen in range(0,draw - nred):
+        prob *= (bagGreen - igreen)/bag
+        bag -=1
+    # print('probability to draw {k} red balls from {nd} in a specific order = {p}'.format(k=nred,nd=draw,p=prob))
+
+    # multiply by the number of red/green order permutations
+    prob *= comb(N=draw,k=nred)
+    # print('summed over orderings = {p}'.format(p=prob))
+    return(prob)
+
+# compute 
+
+sumProb = 0.0
+for nr in range(0,6):
+    RBprob = drawRedBalls(nr)
+    sumProb += RBprob
+    print('prob of drawing {i} red: {p:6.4f}'.format(i=nr,p=RBprob))
+
+print('total probability: {s:6.4f}'.format(s=sumProb))</code></pre>
+<pre><code>## prob of drawing 0 red: 0.0003
+## prob of drawing 1 red: 0.0167
+## prob of drawing 2 red: 0.1499
+## prob of drawing 3 red: 0.3996
+## prob of drawing 4 red: 0.3497
+## prob of drawing 5 red: 0.0839
+## total probability: 1.0000</code></pre>
 <!-- 
 
 5 choose 2
