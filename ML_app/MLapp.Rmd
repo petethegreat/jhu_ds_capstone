@@ -88,7 +88,7 @@ print('Probability of at least 2 bruises = {p2:5.3f}'.format(p2=sum))
 
 ```
 
-There is a 73.6% chance of at least 2 bruises occuring from 6 swellings.
+There is a 72.6% chance of at least 2 bruises occuring from 6 swellings.
 
 # Gumballs
 
@@ -97,7 +97,7 @@ $$
 \begin{aligned} 
 P(rrggg) & = & \frac{10}{15} \times \frac{9}{14} \times \frac{5}{13} \times \frac{4}{12} \times \frac{3}{11} \\
 & = & \frac{5400}{360360}\\
-& = & 30/2002\\
+& = & 15/1001\\
 & = & 0.015
 \end{aligned}
 $$
@@ -106,9 +106,9 @@ This is a specific ordering, but drawing the same combination in a different ord
 thus
 $$
 \begin{aligned}
-P(2r,3g) & = & \binom{5}{2} \, \frac{30}{2002} \\
-& = & \frac{5!}{2!3!} \frac{30}{2002}\\
-& = & 300/2002 \\
+P(2r,3g) & = & \binom{5}{2} \, \frac{15}{1001} \\
+& = & \frac{5!}{2!3!} \frac{15}{1001}\\
+& = & \frac{150}{1001} \\
 & = & 0.150
 \end{aligned}
 $$
